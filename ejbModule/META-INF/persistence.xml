@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="1.0" xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd">
+    <persistence-unit name="servicesPu" transaction-type="JTA">
+        <jta-data-source>jdbc/Services</jta-data-source>
+        <class>com.alodiga.services.provider.commons.models.Address</class>
+        <class>com.alodiga.services.provider.commons.models.Audit</class>
+        <class>com.alodiga.services.provider.commons.models.AuditAction</class>
+        <class>com.alodiga.services.provider.commons.models.Category</class>
+        <class>com.alodiga.services.provider.commons.models.City</class>
+        <class>com.alodiga.services.provider.commons.models.Country</class>
+        <class>com.alodiga.services.provider.commons.models.CountryTranslation</class>
+        <class>com.alodiga.services.provider.commons.models.County</class>
+        <class>com.alodiga.services.provider.commons.models.CountyHasCity</class>
+        <class>com.alodiga.services.provider.commons.models.Currency</class>
+        <class>com.alodiga.services.provider.commons.models.Customer</class>
+        <class>com.alodiga.services.provider.commons.models.Enterprise</class>
+        <class>com.alodiga.services.provider.commons.models.Event</class>
+        <class>com.alodiga.services.provider.commons.models.Language</class>
+        <class>com.alodiga.services.provider.commons.models.ParameterType</class>
+        <class>com.alodiga.services.provider.commons.models.Permission</class>
+        <class>com.alodiga.services.provider.commons.models.PermissionData</class>
+        <class>com.alodiga.services.provider.commons.models.PermissionGroup</class>
+        <class>com.alodiga.services.provider.commons.models.PermissionGroupData</class>
+        <class>com.alodiga.services.provider.commons.models.PermissionHasProfile</class>
+        <class>com.alodiga.services.provider.commons.models.Product</class>
+        <class>com.alodiga.services.provider.commons.models.Profile</class>
+        <class>com.alodiga.services.provider.commons.models.ProfileData</class>
+        <class>com.alodiga.services.provider.commons.models.Provider</class>
+        <class>com.alodiga.services.provider.commons.models.Report</class>
+        <class>com.alodiga.services.provider.commons.models.ReportHasProfile</class>
+        <class>com.alodiga.services.provider.commons.models.Report</class>
+        <class>com.alodiga.services.provider.commons.models.ReportHasProfile</class>
+        <class>com.alodiga.services.provider.commons.models.ReportParameter</class>
+        <class>com.alodiga.services.provider.commons.models.ReportType</class>
+        <class>com.alodiga.services.provider.commons.models.State</class>
+        <class>com.alodiga.services.provider.commons.models.TinType</class>
+        <class>com.alodiga.services.provider.commons.models.User</class>
+        <class>com.alodiga.services.provider.commons.models.UserHasProfileHasEnterprise</class>
+        <class>com.alodiga.services.provider.commons.models.Banner</class>
+        <class>com.alodiga.services.provider.commons.models.BannerType</class>
+
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+        <properties>
+            <property name="eclipselink.logging.timestamp" value="true"/>
+            <property name="toplink.cache.type.default" value="Full"/>
+            <property name="toplink.cache.size.default" value="5000"/>
+            <property name="toplink.cache.shared.Secret" value="false"/>
+        </properties>
+    </persistence-unit>
+</persistence>
