@@ -11,6 +11,7 @@
         <class>com.alodiga.services.provider.commons.models.CountryTranslation</class>
         <class>com.alodiga.services.provider.commons.models.County</class>
         <class>com.alodiga.services.provider.commons.models.CountyHasCity</class>
+        <class>com.alodiga.services.provider.commons.models.Condition</class>
         <class>com.alodiga.services.provider.commons.models.Currency</class>
         <class>com.alodiga.services.provider.commons.models.Customer</class>
         <class>com.alodiga.services.provider.commons.models.Enterprise</class>
@@ -23,6 +24,9 @@
         <class>com.alodiga.services.provider.commons.models.PermissionGroupData</class>
         <class>com.alodiga.services.provider.commons.models.PermissionHasProfile</class>
         <class>com.alodiga.services.provider.commons.models.Product</class>
+        <class>com.alodiga.services.provider.commons.models.ProductExpiration</class>
+        <class>com.alodiga.services.provider.commons.models.ProductHistory</class>
+        <class>com.alodiga.services.provider.commons.models.ProductSerie</class>
         <class>com.alodiga.services.provider.commons.models.Profile</class>
         <class>com.alodiga.services.provider.commons.models.ProfileData</class>
         <class>com.alodiga.services.provider.commons.models.Provider</class>
@@ -34,6 +38,7 @@
         <class>com.alodiga.services.provider.commons.models.ReportType</class>
         <class>com.alodiga.services.provider.commons.models.State</class>
         <class>com.alodiga.services.provider.commons.models.TinType</class>
+        <class>com.alodiga.services.provider.commons.models.Transaction</class>
         <class>com.alodiga.services.provider.commons.models.User</class>
         <class>com.alodiga.services.provider.commons.models.UserHasProfileHasEnterprise</class>
         <class>com.alodiga.services.provider.commons.models.Banner</class>
