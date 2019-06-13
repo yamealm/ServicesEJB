@@ -11,6 +11,7 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionManagement;
 import javax.ejb.TransactionManagementType;
 import javax.interceptor.Interceptors;
+import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 
@@ -21,6 +22,7 @@ import com.alodiga.services.provider.commons.ejbs.TransactionEJBLocal;
 import com.alodiga.services.provider.commons.exceptions.EmptyListException;
 import com.alodiga.services.provider.commons.exceptions.GeneralException;
 import com.alodiga.services.provider.commons.exceptions.MinAmountBalanceException;
+import com.alodiga.services.provider.commons.exceptions.NegativeBalanceException;
 import com.alodiga.services.provider.commons.exceptions.NullParameterException;
 import com.alodiga.services.provider.commons.exceptions.RegisterNotFoundException;
 import com.alodiga.services.provider.commons.genericEJB.AbstractSPEJB;
@@ -31,6 +33,7 @@ import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Condition;
 import com.alodiga.services.provider.commons.models.ProductHistory;
 import com.alodiga.services.provider.commons.models.Transaction;
+import com.alodiga.services.provider.commons.models.TransactionType;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.EjbUtils;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
@@ -235,13 +238,60 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 
 	@Override
-	public boolean validateBalance(ProductHistory currentProductHistory, float amount) throws MinAmountBalanceException {
-	   if ((currentProductHistory.getCurrentQuantity() - amount) < 0) {
-	            throw new MinAmountBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "param"), null);
+	public boolean validateBalance(ProductHistory currentProductHistory, float amount, boolean isAdd) throws NegativeBalanceException {
+	   if (!isAdd && (currentProductHistory.getCurrentQuantity() - amount) < 0) {
+	            throw new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "param"), null);
 	   }
 	   return true;
 	}
 
-  
+	 public Transaction saveTransactionStock(Transaction transaction) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+		
+		  if (transaction == null) {
+	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
+	      }
+		  try {
+			  ProductHistory currentProductHistory =loadLastProductHistoryByProductId(transaction.getProduct().getId());
+			  validateBalance(currentProductHistory, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ADD));
+			  ProductHistory productHistory = new ProductHistory();
+		      List<ProductHistory> histories = new ArrayList<ProductHistory>();
+		      productHistory = createBalanceHistory(transaction, transaction.getQuantity(), transaction.getTransactionType().getId().equals(TransactionType.ADD));
+		      productHistory.setTransaction(transaction);
+              histories.add(productHistory);
+              transaction.setProductHistories(histories);
+              EJBRequest request = new EJBRequest();
+              request.setParam(transaction);
+			  saveTransaction(request);
+	        }  catch (RegisterNotFoundException ex) {
+		           throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
+		    }catch (NegativeBalanceException e) {
+	            throw  new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "MinAmountBalance"), null);
+	        }
+		 
+		 return transaction;
+	 
+	 }
+	 
+	 private ProductHistory createBalanceHistory(Transaction transaction, int transferAmount, boolean isAdd) throws GeneralException, NullParameterException, NegativeBalanceException, RegisterNotFoundException {
+		    ProductHistory currentProductHistory = loadLastProductHistoryByProductId(transaction.getProduct().getId());
+	        validateBalance(currentProductHistory, transferAmount, isAdd);
+	        int currentQuantity = currentProductHistory.getCurrentQuantity();
+	        ProductHistory productHistory = new ProductHistory();
+	        productHistory.setProduct(transaction.getProduct());
+	        productHistory.setCreationDate(new Timestamp(new Date().getTime()));
+	        productHistory.setOldQuantity(currentQuantity);
+	        int newCurrentQuantity = 0;
+	        if(!isAdd)
+	        	newCurrentQuantity = currentQuantity - transferAmount; //RESTO DEL MONTO ACTUAL (EL QUE REALIZA LA TRANSFERENCIA)
+	        else
+	        	newCurrentQuantity = currentQuantity + transferAmount;//SUMO AL MONTO ACTUAL (EL DESTINO)
+	        
+	        if (newCurrentQuantity < 0) {
+	            throw new NegativeBalanceException("Current amount can not be negative");
+	        }
+	        productHistory.setCurrentQuantity(newCurrentQuantity);
+	        return productHistory;
+	    }
+	 
 
 }
