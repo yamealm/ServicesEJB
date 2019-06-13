@@ -55,22 +55,6 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
         return (Customer) loadEntity(Customer.class, request, logger, getMethodName());
     }
 
-    public Customer loadCustomerByAni(String ani) throws RegisterNotFoundException, GeneralException, NullParameterException {
-
-        Customer customer = null;
-        try {
-            Query query = createQuery("SELECT pinFree.pin.customer FROM PinFree pinFree WHERE pinFree.ani =?1");
-            query.setParameter("1", ani);
-            customer = (Customer) query.setHint("toplink.refresh", "true").getSingleResult();
-        } catch (NoResultException e) {
-            throw new RegisterNotFoundException(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
-        }
-        return customer;
-
-    }
 
     public Customer loadCustomerByEmail(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
 
@@ -109,7 +93,7 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
             throw new NullParameterException( sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), QueryConstants.PARAM_LOGIN), null);
         }
         Customer customer = null;
-        String sql = "SELECT c FROM Customer c WHERE c.login = :login";
+        String sql = "SELECT c FROM Customer c WHERE c.dni = :login";
         try {
             Query query = null;
             query = createQuery(sql);
@@ -129,9 +113,6 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
         return customer;
     }
 
-    public Customer loadCustomerBySerial(String serial) throws RegisterNotFoundException, GeneralException, NullParameterException {
-        return null;
-    }
 
     public Customer saveCustomer(EJBRequest request) throws GeneralException, NullParameterException {
         return (Customer) saveEntity(request, logger, getMethodName());
@@ -150,10 +131,7 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
         }
         return (Address) saveEntity(address);
     }
-    /*
-    public CustomerProductDetail saveCustomerProductDetail(EJBRequest request) throws GeneralException, NullParameterException {
-    return (CustomerProductDetail) saveEntity(request, logger, getMethodName());
-    }*/
+
 
     public List<Customer> searchCustomers(Long enterpriseId, String login, String fullName, String email) throws EmptyListException, NullParameterException, GeneralException {
         List<Customer> customers = new ArrayList<Customer>();
@@ -163,7 +141,7 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
         StringBuilder sqlBuilder = new StringBuilder("SELECT c FROM Customer c WHERE c.enterprise.id = ?1 AND c.enabled = 1");
         try {
             if (login != null) {
-                sqlBuilder.append(" AND c.login like '%").append(login).append("%'");
+                sqlBuilder.append(" AND c.dni like '%").append(login).append("%'");
             }
             if (fullName != null) {
                 sqlBuilder.append(" AND c.firstName like '%").append(fullName).append("%'");
