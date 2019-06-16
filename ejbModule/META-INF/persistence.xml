@@ -39,6 +39,7 @@
         <class>com.alodiga.services.provider.commons.models.State</class>
         <class>com.alodiga.services.provider.commons.models.TinType</class>
         <class>com.alodiga.services.provider.commons.models.Transaction</class>
+        <class>com.alodiga.services.provider.commons.models.TransactionType</class>
         <class>com.alodiga.services.provider.commons.models.User</class>
         <class>com.alodiga.services.provider.commons.models.UserHasProfileHasEnterprise</class>
         <class>com.alodiga.services.provider.commons.models.Banner</class>
