@@ -280,6 +280,8 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	        productHistory.setProduct(transaction.getProduct());
 	        productHistory.setCreationDate(new Timestamp(new Date().getTime()));
 	        productHistory.setOldQuantity(currentQuantity);
+	        productHistory.setOldAmount(currentProductHistory.getCurrentQuantity());
+	        productHistory.setCurrentAmount(transaction.getProduct().getAmount());
 	        int newCurrentQuantity = 0;
 	        if(!isAdd)
 	        	newCurrentQuantity = currentQuantity - transferAmount; //RESTO DEL MONTO ACTUAL (EL QUE REALIZA LA TRANSFERENCIA)
