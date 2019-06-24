@@ -11,7 +11,7 @@
         <class>com.alodiga.services.provider.commons.models.CountryTranslation</class>
         <class>com.alodiga.services.provider.commons.models.County</class>
         <class>com.alodiga.services.provider.commons.models.CountyHasCity</class>
-        <class>com.alodiga.services.provider.commons.models.Condition</class>
+        <class>com.alodiga.services.provider.commons.models.Condicion</class>
         <class>com.alodiga.services.provider.commons.models.Currency</class>
         <class>com.alodiga.services.provider.commons.models.Customer</class>
         <class>com.alodiga.services.provider.commons.models.Enterprise</class>

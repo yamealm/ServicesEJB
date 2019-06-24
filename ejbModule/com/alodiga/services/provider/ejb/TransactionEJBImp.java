@@ -30,8 +30,9 @@ import com.alodiga.services.provider.commons.genericEJB.EJBRequest;
 import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Category;
-import com.alodiga.services.provider.commons.models.Condition;
+import com.alodiga.services.provider.commons.models.Condicion;
 import com.alodiga.services.provider.commons.models.ProductHistory;
+import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Transaction;
 import com.alodiga.services.provider.commons.models.TransactionType;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
@@ -60,9 +61,9 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 
 	@Override
-	public List<Condition> getConditions() throws GeneralException, NullParameterException, EmptyListException {
+	public List<Condicion> getConditions() throws GeneralException, NullParameterException, EmptyListException {
 		EJBRequest request = new EJBRequest();
-		List<Condition> conditions = (List<Condition>) listEntities(Condition.class, request, logger, getMethodName());
+		List<Condicion> conditions = (List<Condicion>) listEntities(Condicion.class, request, logger, getMethodName());
 	    return conditions;
 	}
 
@@ -155,17 +156,17 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 
 	@Override
-	public Condition loadConditionbyId(Long id)	throws NullParameterException, RegisterNotFoundException, GeneralException {
+	public Condicion loadConditionbyId(Long id)	throws NullParameterException, RegisterNotFoundException, GeneralException {
 		  if (id == null) {
 	            throw new NullParameterException(" parameter id cannot be null in loadConditionbyId.");
 	      }
-		  Condition condition = null;
+		  Condicion condition = null;
 	      try {
 	          Query query = createQuery("SELECT tt FROM Condition tt WHERE tt.id = ?1");
 	          query.setParameter("1", id);
-	          condition = (Condition) query.setHint("toplink.refresh", "true").getSingleResult();
+	          condition = (Condicion) query.setHint("toplink.refresh", "true").getSingleResult();
 	      } catch (NoResultException ex) {
-	            throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, Condition.class.getSimpleName(), "loadConditionbyId", Condition.class.getSimpleName(), null), ex);
+	            throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, Condicion.class.getSimpleName(), "loadConditionbyId", Condicion.class.getSimpleName(), null), ex);
 	      } catch (Exception ex) {
 	            throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), ex.getMessage()), ex);
 	      }
@@ -236,6 +237,10 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	public ProductHistory saveProductHistory(EJBRequest request) throws GeneralException, NullParameterException {
 		return (ProductHistory) saveEntity(request, logger, getMethodName());
 	}
+	
+	private ProductSerie saveProductSerie(EJBRequest request) throws GeneralException, NullParameterException {
+		return (ProductSerie) saveEntity(request, logger, getMethodName());
+	}
 
 	@Override
 	public boolean validateBalance(ProductHistory currentProductHistory, float amount, boolean isAdd) throws NegativeBalanceException {
@@ -245,7 +250,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	   return true;
 	}
 
-	 public Transaction saveTransactionStock(Transaction transaction) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+	 public Transaction saveTransactionStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 		
 		  if (transaction == null) {
 	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
@@ -261,11 +266,20 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
               transaction.setProductHistories(histories);
               EJBRequest request = new EJBRequest();
               request.setParam(transaction);
-			  saveTransaction(request);
+              transaction = saveTransaction(request);
+              for (ProductSerie productSerie : productSeries) {
+            	  productSerie.setBeginTransactionId(transaction);
+            	  EJBRequest requestSerie = new EJBRequest();
+            	  requestSerie.setParam(productSerie);
+            	  saveProductSerie(requestSerie);
+              }
+              
 	        }  catch (RegisterNotFoundException ex) {
 		           throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
 		    }catch (NegativeBalanceException e) {
 	            throw  new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "MinAmountBalance"), null);
+	        }catch (GeneralException e) {
+	            throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
 	        }
 		 
 		 return transaction;
@@ -275,13 +289,13 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	 private ProductHistory createBalanceHistory(Transaction transaction, int transferAmount, boolean isAdd) throws GeneralException, NullParameterException, NegativeBalanceException, RegisterNotFoundException {
 		    ProductHistory currentProductHistory = loadLastProductHistoryByProductId(transaction.getProduct().getId());
 	        validateBalance(currentProductHistory, transferAmount, isAdd);
-	        int currentQuantity = currentProductHistory.getCurrentQuantity();
+	        int currentQuantity = currentProductHistory!=null?currentProductHistory.getCurrentQuantity():0;
 	        ProductHistory productHistory = new ProductHistory();
 	        productHistory.setProduct(transaction.getProduct());
 	        productHistory.setCreationDate(new Timestamp(new Date().getTime()));
 	        productHistory.setOldQuantity(currentQuantity);
-	        productHistory.setOldAmount(currentProductHistory.getCurrentQuantity());
-	        productHistory.setCurrentAmount(transaction.getProduct().getAmount());
+	        productHistory.setOldAmount(currentProductHistory!=null?currentProductHistory.getCurrentAmount():0f);
+	        productHistory.setCurrentAmount(transaction.getAmount());
 	        int newCurrentQuantity = 0;
 	        if(!isAdd)
 	        	newCurrentQuantity = currentQuantity - transferAmount; //RESTO DEL MONTO ACTUAL (EL QUE REALIZA LA TRANSFERENCIA)
