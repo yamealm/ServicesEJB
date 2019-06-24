@@ -308,6 +308,27 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	        productHistory.setCurrentQuantity(newCurrentQuantity);
 	        return productHistory;
 	    }
+
+	@Override
+	public List<ProductSerie> searchProductSerieByProductId(Long productId)	throws GeneralException, NullParameterException, EmptyListException {
+		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+		
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.productId =" + productId);
+		 
+		    Query query = null;
+		    try {
+		        System.out.println("query:********"+sqlBuilder.toString());
+		        query = createQuery(sqlBuilder.toString());
+		        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		    if (productSeries.isEmpty()) {
+		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		    }
+		    return productSeries;
+	}
 	 
 
 }
