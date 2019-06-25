@@ -313,7 +313,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	public List<ProductSerie> searchProductSerieByProductId(Long productId)	throws GeneralException, NullParameterException, EmptyListException {
 		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
 		
-		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.productId =" + productId);
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.product.id =" + productId);
 		 
 		    Query query = null;
 		    try {
