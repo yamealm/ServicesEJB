@@ -240,7 +240,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	     }
 		 Integer quantityTotal = null;
 	     try {
-	          quantityTotal = (Integer) entityManager.createQuery("SELECT count(b.quantity) FROM ProductSerie b WHERE b.product.id = " + productId + " and b.endingDate is null" ).getSingleResult();
+	          quantityTotal = (Integer) entityManager.createQuery("SELECT sum(b.quantity) FROM ProductSerie b WHERE b.product.id = " + productId + " and b.endingDate is null" ).getSingleResult();
 	     } catch (NoResultException ex) {
 	    	 quantityTotal = 0;
 	     } catch (Exception e) {
