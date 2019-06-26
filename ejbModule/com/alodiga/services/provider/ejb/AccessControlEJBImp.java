@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 import com.alodiga.services.provider.commons.ejbs.AccessControlEJB;
 import com.alodiga.services.provider.commons.ejbs.AccessControlEJBLocal;
 import com.alodiga.services.provider.commons.ejbs.UserEJBLocal;
-import com.alodiga.services.provider.commons.exceptions.DisabledDistributorException;
+import com.alodiga.services.provider.commons.exceptions.DisabledUserException;
 import com.alodiga.services.provider.commons.exceptions.EmptyListException;
 import com.alodiga.services.provider.commons.exceptions.GeneralException;
 import com.alodiga.services.provider.commons.exceptions.NullParameterException;
@@ -145,7 +145,7 @@ public class AccessControlEJBImp extends AbstractSPEJB implements AccessControlE
         return false;
     }
 
-    public User validateUser(String login, String password) throws RegisterNotFoundException, NullParameterException, GeneralException, DisabledDistributorException {
+    public User validateUser(String login, String password) throws RegisterNotFoundException, NullParameterException, GeneralException, DisabledUserException {
         User user = null;
 
 
@@ -171,7 +171,7 @@ public class AccessControlEJBImp extends AbstractSPEJB implements AccessControlE
             throw new GeneralException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName(), "user"), ex);
         }
         if (!user.getEnabled()) {
-            throw new DisabledDistributorException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName(), "distributor enabled"), null);
+            throw new DisabledUserException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName(), "distributor enabled"), null);
         }
 
         return user;
