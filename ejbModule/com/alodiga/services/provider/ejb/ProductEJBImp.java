@@ -1,5 +1,7 @@
 package com.alodiga.services.provider.ejb;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +26,11 @@ import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Product;
+import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Provider;
+import com.alodiga.services.provider.commons.models.Transaction;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
+import com.alodiga.services.provider.commons.utils.EjbUtils;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
 
 @Interceptors({SPLoggerInterceptor.class, SPContextInterceptor.class})
@@ -122,6 +127,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
         return (Category) saveEntity(request, logger, getMethodName());
     }
 
+    
     public Product saveProduct(EJBRequest request) throws GeneralException, NullParameterException {
 
         return (Product) saveEntity(request, logger, getMethodName());
@@ -131,5 +137,44 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 
         return (Provider) saveEntity(request, logger, getMethodName());
     }
+    
+    
+	@Override
+	public List<ProductSerie> searchProductSerie(EJBRequest request) throws GeneralException, NullParameterException, EmptyListException{
+		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+	    Map<String, Object> params = request.getParams();
+	
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.creationDate BETWEEN ?1 AND ?2");
+	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
+	    }
+	
+	    if (params.containsKey(QueryConstants.PARAM_PROVIDER_ID)) {
+	        sqlBuilder.append(" AND p.provider.id=").append(params.get(QueryConstants.PARAM_PROVIDER_ID));
+	    }
+	    if (params.containsKey(QueryConstants.PARAM_PRODUCT_ID)) {
+	        sqlBuilder.append(" AND p.product.id=").append(params.get(QueryConstants.PARAM_PRODUCT_ID));
+	    }
+	    Query query = null;
+	    try {
+	        System.out.println("query:********"+sqlBuilder.toString());
+	        query = createQuery(sqlBuilder.toString());
+	        query.setParameter("1", EjbUtils.getBeginningDate((Date) params.get(QueryConstants.PARAM_BEGINNING_DATE)));
+	        query.setParameter("2", EjbUtils.getEndingDate((Date) params.get(QueryConstants.PARAM_ENDING_DATE)));
+	        if (request.getLimit() != null && request.getLimit() > 0) {
+	            query.setMaxResults(request.getLimit());
+	        }
+	        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (productSeries.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return productSeries;
+	}
+
+    
 
 }
