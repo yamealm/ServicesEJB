@@ -11,7 +11,7 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionManagement;
 import javax.ejb.TransactionManagementType;
 import javax.interceptor.Interceptors;
-import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 
@@ -21,16 +21,17 @@ import com.alodiga.services.provider.commons.ejbs.TransactionEJB;
 import com.alodiga.services.provider.commons.ejbs.TransactionEJBLocal;
 import com.alodiga.services.provider.commons.exceptions.EmptyListException;
 import com.alodiga.services.provider.commons.exceptions.GeneralException;
-import com.alodiga.services.provider.commons.exceptions.MinAmountBalanceException;
 import com.alodiga.services.provider.commons.exceptions.NegativeBalanceException;
 import com.alodiga.services.provider.commons.exceptions.NullParameterException;
 import com.alodiga.services.provider.commons.exceptions.RegisterNotFoundException;
 import com.alodiga.services.provider.commons.genericEJB.AbstractSPEJB;
 import com.alodiga.services.provider.commons.genericEJB.EJBRequest;
 import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
+import com.alodiga.services.provider.commons.genericEJB.SPGenericEntity;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Condicion;
+import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.ProductHistory;
 import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Transaction;
@@ -232,6 +233,25 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	     }
 	     return productHistory;
 	}
+	
+	@Override
+	public Integer loadQuantityByProductId(Long productId)	throws GeneralException, NullParameterException {
+		 if (productId == null) {
+	            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "accountId"), null);
+	     }
+		 Long quantityTotal = null;
+	     try {
+	          quantityTotal = (Long) entityManager.createQuery("SELECT sum(b.quantity) FROM ProductSerie b WHERE b.product.id = " + productId + " and b.endingDate is null" ).getSingleResult();
+	     } catch (NoResultException ex) {
+	    	 quantityTotal = 0L;
+	     } catch (Exception e) {
+	           e.printStackTrace();
+	           throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
+	     }
+	     if (quantityTotal==null)
+	    	 quantityTotal = 0L;
+	     return quantityTotal.intValue();
+	}
 
 	@Override
 	public ProductHistory saveProductHistory(EJBRequest request) throws GeneralException, NullParameterException {
@@ -249,6 +269,14 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	   }
 	   return true;
 	}
+	
+	@Override
+	public boolean validateBalanceProduct(Integer currentQuantity, float amount, boolean isAdd) throws NegativeBalanceException {
+	   if (!isAdd && (currentQuantity - amount) < 0) {
+	            throw new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "param"), null);
+	   }
+	   return true;
+	}
 
 	 public Transaction saveTransactionStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 		
@@ -256,33 +284,81 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
 	      }
 		  try {
-			  ProductHistory currentProductHistory =loadLastProductHistoryByProductId(transaction.getProduct().getId());
-			  validateBalance(currentProductHistory, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ADD));
-			  ProductHistory productHistory = new ProductHistory();
-		      List<ProductHistory> histories = new ArrayList<ProductHistory>();
-		      productHistory = createBalanceHistory(transaction, transaction.getQuantity(), transaction.getTransactionType().getId().equals(TransactionType.ADD));
-		      productHistory.setTransaction(transaction);
-              histories.add(productHistory);
-              transaction.setProductHistories(histories);
-              EJBRequest request = new EJBRequest();
-              request.setParam(transaction);
-              transaction = saveTransaction(request);
-              for (ProductSerie productSerie : productSeries) {
-            	  productSerie.setBeginTransactionId(transaction);
-            	  EJBRequest requestSerie = new EJBRequest();
-            	  requestSerie.setParam(productSerie);
-            	  saveProductSerie(requestSerie);
-              }
-              
-	        }  catch (RegisterNotFoundException ex) {
-		           throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
-		    }catch (NegativeBalanceException e) {
+			  int currentQuantity =loadQuantityByProductId(transaction.getProduct().getId());
+			  validateBalanceProduct(currentQuantity, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ADD));
+			  EntityTransaction trans = entityManager.getTransaction();
+				try {
+					trans.begin();
+					Product product = transaction.getProduct();
+					if (((SPGenericEntity) product).getPk() != null) {
+						entityManagerWrapper.update(product);
+					}
+					entityManagerWrapper.save(transaction);
+					
+					for (ProductSerie productSerie : productSeries) {
+						entityManagerWrapper.save(productSerie);
+						
+					}
+					trans.commit();
+				} catch (Exception e) {
+					e.printStackTrace();
+					try {
+						if (trans.isActive()) {
+							trans.rollback();
+						}
+					} catch (IllegalStateException e1) {
+						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+					} catch (SecurityException e1) {
+						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+					}
+					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+				}
+	        } catch (NegativeBalanceException e) {
 	            throw  new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "MinAmountBalance"), null);
 	        }catch (GeneralException e) {
 	            throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
 	        }
 		 
 		 return transaction;
+	 
+	 }
+	 
+	 @Override
+	 public Transaction saveEgressStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+			
+		if (transaction == null) {
+			throw new NullParameterException(logger,
+					sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
+		}
+		EntityTransaction trans = entityManager.getTransaction();
+		try {
+			trans.begin();
+			entityManagerWrapper.save(transaction);
+			for (ProductSerie productSerie : productSeries) {
+				if (productSerie.getId() != null) {
+					productSerie.setEndingTransactionId(transaction);
+					entityManagerWrapper.update(productSerie);
+				}else {
+					entityManagerWrapper.save(productSerie);
+				}
+
+			}
+			trans.commit();
+		} catch (Exception e) {
+			e.printStackTrace();
+			try {
+				if (trans.isActive()) {
+					trans.rollback();
+				}
+			} catch (IllegalStateException e1) {
+				throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+			} catch (SecurityException e1) {
+				throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+			}
+			throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+
+		}
+		return transaction;
 	 
 	 }
 	 
@@ -309,6 +385,84 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	        return productHistory;
 	    }
 
+	 @Override
+	 public Transaction modificarStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+			
+		  if (transaction == null) {
+	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
+	      }
+		  try {
+              EntityTransaction trans = entityManager.getTransaction();
+              try {
+            	  trans.begin();
+                  if (((SPGenericEntity) transaction).getPk() != null) {
+                      entityManagerWrapper.update(transaction);
+                  }
+                  for (ProductSerie productSerie : productSeries) {
+    	           	if (((SPGenericEntity) productSerie).getPk() != null) {
+                      entityManagerWrapper.update(productSerie);
+                    }
+                  }
+                  trans.commit();
+              } catch (Exception e) {
+                  e.printStackTrace();
+                  try {
+                      if (trans.isActive()) {
+                    	  trans.rollback();
+                      }
+                  } catch (IllegalStateException e1) {
+                	  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+                  } catch (SecurityException e1) {
+                	  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+                  }
+                  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+              }
+             
+	        }catch (GeneralException e) {
+	            throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+	        }
+		 
+		 return transaction;
+	 
+	 }
+	 
+	 @Override
+	 public Transaction deleteStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+			
+		  if (transaction == null) {
+	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
+	      }
+		  try {
+              EntityTransaction trans = entityManager.getTransaction();
+              try {
+            	  trans.begin();
+                  for (ProductSerie productSerie : productSeries) {
+    	           	  entityManager.remove(productSerie);
+                  }
+                  entityManager.remove(transaction);
+                  trans.commit();
+              } catch (Exception e) {
+                  e.printStackTrace();
+                  try {
+                      if (trans.isActive()) {
+                    	  trans.rollback();
+                      }
+                  } catch (IllegalStateException e1) {
+                	  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+                  } catch (SecurityException e1) {
+                	  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+                  }
+                  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+              }
+             
+	        }catch (GeneralException e) {
+	            throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+	        }
+		 
+		 return transaction;
+	 
+	 }
+	 
 	@Override
 	public List<ProductSerie> searchProductSerieByProductId(Long productId)	throws GeneralException, NullParameterException, EmptyListException {
 		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
@@ -328,6 +482,25 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
 		    }
 		    return productSeries;
+	}
+	
+	@Override
+	public List<Product> listProducts()	throws GeneralException, NullParameterException, EmptyListException {
+		 List<Product> products = new ArrayList<Product>();
+		
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM Product t WHERE t.enabled=1");
+		 
+		    Query query = null;
+		    try {
+		        query = createQuery(sqlBuilder.toString());
+		        products = query.setHint("toplink.refresh", "true").getResultList();
+		    } catch (Exception e) {
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		    if (products.isEmpty()) {
+		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		    }
+		    return products;
 	}
 	 
 

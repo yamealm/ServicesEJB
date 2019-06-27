@@ -34,6 +34,7 @@ import com.alodiga.services.provider.commons.models.County;
 import com.alodiga.services.provider.commons.models.Currency;
 import com.alodiga.services.provider.commons.models.Enterprise;
 import com.alodiga.services.provider.commons.models.Language;
+import com.alodiga.services.provider.commons.models.Provider;
 import com.alodiga.services.provider.commons.models.State;
 import com.alodiga.services.provider.commons.models.TinType;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
@@ -506,6 +507,12 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
             throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "countryTranslation"), null);
         }
         return (CountryTranslation) saveEntity(countryTranslation);
+    }
+    
+    public List<Provider> getProvider() throws EmptyListException, GeneralException, NullParameterException {
+        EJBRequest request = new EJBRequest();
+        List<Provider> providers = (List<Provider>) listEntities(Provider.class, request, logger, getMethodName());
+        return providers;
     }
 
  }

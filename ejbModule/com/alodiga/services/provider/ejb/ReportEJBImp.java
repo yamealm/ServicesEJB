@@ -168,4 +168,6 @@ public class ReportEJBImp extends AbstractSPEJB implements ReportEJB, ReportEJBL
     public Report saveReport(EJBRequest request) throws NullParameterException, GeneralException {
         return (Report) saveEntity(request, logger, getMethodName());
     }
+    
+    
 }
