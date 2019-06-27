@@ -31,6 +31,7 @@ import com.alodiga.services.provider.commons.genericEJB.SPGenericEntity;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Condicion;
+import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.ProductHistory;
 import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Transaction;
@@ -238,16 +239,18 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		 if (productId == null) {
 	            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "accountId"), null);
 	     }
-		 Integer quantityTotal = null;
+		 Long quantityTotal = null;
 	     try {
-	          quantityTotal = (Integer) entityManager.createQuery("SELECT sum(b.quantity) FROM ProductSerie b WHERE b.product.id = " + productId + " and b.endingDate is null" ).getSingleResult();
+	          quantityTotal = (Long) entityManager.createQuery("SELECT sum(b.quantity) FROM ProductSerie b WHERE b.product.id = " + productId + " and b.endingDate is null" ).getSingleResult();
 	     } catch (NoResultException ex) {
-	    	 quantityTotal = 0;
+	    	 quantityTotal = 0L;
 	     } catch (Exception e) {
 	           e.printStackTrace();
 	           throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
 	     }
-	     return quantityTotal;
+	     if (quantityTotal==null)
+	    	 quantityTotal = 0L;
+	     return quantityTotal.intValue();
 	}
 
 	@Override
@@ -286,9 +289,12 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			  EntityTransaction trans = entityManager.getTransaction();
 				try {
 					trans.begin();
-					if (((SPGenericEntity) transaction).getPk() != null) {
-						entityManagerWrapper.save(transaction);
+					Product product = transaction.getProduct();
+					if (((SPGenericEntity) product).getPk() != null) {
+						entityManagerWrapper.update(product);
 					}
+					entityManagerWrapper.save(transaction);
+					
 					for (ProductSerie productSerie : productSeries) {
 						entityManagerWrapper.save(productSerie);
 						
@@ -327,17 +333,15 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		EntityTransaction trans = entityManager.getTransaction();
 		try {
 			trans.begin();
-			if (((SPGenericEntity) transaction).getPk() != null) {
-				entityManagerWrapper.update(transaction);
-			}
+			entityManagerWrapper.save(transaction);
 			for (ProductSerie productSerie : productSeries) {
-				if (productSerie.getBeginTransactionId() != null)
+				if (productSerie.getId() != null) {
 					productSerie.setEndingTransactionId(transaction);
-				else
-					productSerie.setBeginTransactionId(transaction);
-				if (((SPGenericEntity) productSerie).getPk() != null) {
 					entityManagerWrapper.update(productSerie);
+				}else {
+					entityManagerWrapper.save(productSerie);
 				}
+
 			}
 			trans.commit();
 		} catch (Exception e) {
@@ -478,6 +482,25 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
 		    }
 		    return productSeries;
+	}
+	
+	@Override
+	public List<Product> listProducts()	throws GeneralException, NullParameterException, EmptyListException {
+		 List<Product> products = new ArrayList<Product>();
+		
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM Product t WHERE t.enabled=1");
+		 
+		    Query query = null;
+		    try {
+		        query = createQuery(sqlBuilder.toString());
+		        products = query.setHint("toplink.refresh", "true").getResultList();
+		    } catch (Exception e) {
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		    if (products.isEmpty()) {
+		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		    }
+		    return products;
 	}
 	 
 
