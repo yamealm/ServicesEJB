@@ -386,25 +386,23 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	    }
 
 	 @Override
-	 public Transaction modificarStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+	 public Transaction modificarStock(Transaction transaction , ProductSerie productSerie) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 			
 		  if (transaction == null) {
 	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
 	      }
 		  try {
-              EntityTransaction trans = entityManager.getTransaction();
-              try {
-            	  trans.begin();
-                  if (((SPGenericEntity) transaction).getPk() != null) {
-                      entityManagerWrapper.update(transaction);
-                  }
-                  for (ProductSerie productSerie : productSeries) {
-    	           	if (((SPGenericEntity) productSerie).getPk() != null) {
-                      entityManagerWrapper.update(productSerie);
-                    }
-                  }
-                  trans.commit();
-              } catch (Exception e) {
+			EntityTransaction trans = entityManager.getTransaction();
+			try {
+				trans.begin();
+				if (((SPGenericEntity) transaction).getPk() != null) {
+					entityManagerWrapper.update(transaction);
+				}
+				if (((SPGenericEntity) productSerie).getPk() != null) {
+					entityManagerWrapper.update(productSerie);
+				}
+				trans.commit();
+			} catch (Exception e) {
                   e.printStackTrace();
                   try {
                       if (trans.isActive()) {
@@ -427,20 +425,31 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	 }
 	 
 	 @Override
-	 public Transaction deleteStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+	 public Transaction deleteStock(Transaction transaction , ProductSerie productSerie) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 			
 		  if (transaction == null) {
 	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
 	      }
 		  try {
-              EntityTransaction trans = entityManager.getTransaction();
-              try {
-            	  trans.begin();
-                  for (ProductSerie productSerie : productSeries) {
-    	           	  entityManager.remove(productSerie);
-                  }
-                  entityManager.remove(transaction);
-                  trans.commit();
+			EntityTransaction trans = entityManager.getTransaction();
+			try {
+				trans.begin();
+				entityManager.remove(productSerie);
+				List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+
+				StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.product.id =?1 and t.category.id =?2");
+				try {
+					Query query = entityManager.createQuery(sqlBuilder.toString());
+					query.setParameter("1", productSerie.getProduct().getId());
+					query.setParameter("2", productSerie.getCategory().getId());
+					productSeries = query.setHint("toplink.refresh", "true").getResultList();
+				} catch (Exception e) {
+					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION,this.getClass(), getMethodName(), e.getMessage()), null);
+				}
+				if (productSeries.isEmpty()) {
+					entityManager.remove(transaction);	
+				}
+				trans.commit();
               } catch (Exception e) {
                   e.printStackTrace();
                   try {
@@ -464,15 +473,14 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	 }
 	 
 	@Override
-	public List<ProductSerie> searchProductSerieByProductId(Long productId)	throws GeneralException, NullParameterException, EmptyListException {
+	public List<ProductSerie> searchProductSerieByProductId(Long productId, Long categoryId)	throws GeneralException, NullParameterException, EmptyListException {
 		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
 		
-		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.product.id =" + productId);
-		 
-		    Query query = null;
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.product.id =?1 and t.category.id =?2" );
 		    try {
-		        System.out.println("query:********"+sqlBuilder.toString());
-		        query = createQuery(sqlBuilder.toString());
+		         Query query = entityManager.createQuery(sqlBuilder.toString());
+		         query.setParameter("1", productId);
+		         query.setParameter("2", categoryId);
 		        productSeries = query.setHint("toplink.refresh", "true").getResultList();
 		    } catch (Exception e) {
 		        e.printStackTrace();
