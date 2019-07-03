@@ -1,6 +1,9 @@
 package com.alodiga.services.provider.ejb;
 
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -164,6 +167,52 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	        if (request.getLimit() != null && request.getLimit() > 0) {
 	            query.setMaxResults(request.getLimit());
 	        }
+	        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (productSeries.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return productSeries;
+	}
+	
+	
+	@Override
+	public List<ProductSerie> getProductDefeated() throws GeneralException, NullParameterException, EmptyListException{
+		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+		 Timestamp today =  new Timestamp(new java.util.Date().getTime());
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate <=CURRENT_DATE");
+	    Query query = null;
+	    try {
+	        System.out.println("query:********"+sqlBuilder.toString());
+	        query = createQuery(sqlBuilder.toString());
+	        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (productSeries.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return productSeries;
+	}
+	
+	
+	@Override
+	public List<ProductSerie> getProductDefeated(int dayEnding) throws GeneralException, NullParameterException, EmptyListException{
+		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+		 Timestamp today =  new Timestamp(new java.util.Date().getTime());
+		 Calendar calendar = Calendar.getInstance();
+		 calendar.setTime(today);
+		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
+		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate <= '"+ timestampOldDate+"'");
+	    Query query = null;
+	    try {
+	        System.out.println("query:********"+sqlBuilder.toString());
+	        query = createQuery(sqlBuilder.toString());
 	        productSeries = query.setHint("toplink.refresh", "true").getResultList();
 	    } catch (Exception e) {
 	        e.printStackTrace();
