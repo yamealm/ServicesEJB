@@ -434,20 +434,21 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			EntityTransaction trans = entityManager.getTransaction();
 			try {
 				trans.begin();
-				entityManager.remove(productSerie);
+				ProductSerie productSerie2 = entityManager.merge(productSerie);
+				entityManager.remove(productSerie2);
 				List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
 
-				StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.product.id =?1 and t.category.id =?2");
+				StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.beginTransactionId.id =?1");
 				try {
 					Query query = entityManager.createQuery(sqlBuilder.toString());
-					query.setParameter("1", productSerie.getProduct().getId());
-					query.setParameter("2", productSerie.getCategory().getId());
+					query.setParameter("1", productSerie.getBeginTransactionId().getId());
 					productSeries = query.setHint("toplink.refresh", "true").getResultList();
 				} catch (Exception e) {
 					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION,this.getClass(), getMethodName(), e.getMessage()), null);
 				}
 				if (productSeries.isEmpty()) {
-					entityManager.remove(transaction);	
+					Transaction transaction2 = entityManager.merge(transaction);
+					entityManager.remove(transaction2);	
 				}
 				trans.commit();
               } catch (Exception e) {
