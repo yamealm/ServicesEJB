@@ -223,6 +223,32 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    }
 	    return productSeries;
 	}
+	
+	
+	
+	@Override
+	public List<ProductSerie> getProductDefeatedCure(int dayEnding) throws GeneralException, NullParameterException, EmptyListException{
+		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+		 Timestamp today =  new Timestamp(new java.util.Date().getTime());
+		 Calendar calendar = Calendar.getInstance();
+		 calendar.setTime(today);
+		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
+		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.cure <= '"+ timestampOldDate+"'");
+	    Query query = null;
+	    try {
+	        System.out.println("query:********"+sqlBuilder.toString());
+	        query = createQuery(sqlBuilder.toString());
+	        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (productSeries.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return productSeries;
+	}
 
     
 
