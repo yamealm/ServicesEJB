@@ -235,13 +235,13 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 	
 	@Override
-	public Integer loadQuantityByProductId(Long productId)	throws GeneralException, NullParameterException {
+	public Integer loadQuantityByProductId(Long productId, Long categoryId)	throws GeneralException, NullParameterException {
 		 if (productId == null) {
 	            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "accountId"), null);
 	     }
 		 Long quantityTotal = null;
 	     try {
-	          quantityTotal = (Long) entityManager.createQuery("SELECT sum(b.quantity) FROM ProductSerie b WHERE b.product.id = " + productId + " and b.endingDate is null" ).getSingleResult();
+	          quantityTotal = (Long) entityManager.createQuery("SELECT sum(b.quantity) FROM ProductSerie b WHERE b.product.id = " + productId + " and b.endingDate is null and b.category.id="+ categoryId ).getSingleResult();
 	     } catch (NoResultException ex) {
 	    	 quantityTotal = 0L;
 	     } catch (Exception e) {
@@ -284,7 +284,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
 	      }
 		  try {
-			  int currentQuantity =loadQuantityByProductId(transaction.getProduct().getId());
+			  int currentQuantity =loadQuantityByProductId(transaction.getProduct().getId(), transaction.getCategory().getId());
 			  validateBalanceProduct(currentQuantity, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ADD));
 			  EntityTransaction trans = entityManager.getTransaction();
 				try {
