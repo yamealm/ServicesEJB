@@ -494,6 +494,25 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 	
 	@Override
+	public List<ProductSerie> searchProductSerieByCategoryId(Long categoryId) throws GeneralException, NullParameterException, EmptyListException{
+		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+			
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.endingDate is NULL  and t.category.id =?1" );
+		    try {
+		         Query query = entityManager.createQuery(sqlBuilder.toString());
+		         query.setParameter("1", categoryId);
+		        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		    if (productSeries.isEmpty()) {
+		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		    }
+		    return productSeries;
+	}
+	
+	@Override
 	public List<Product> listProducts()	throws GeneralException, NullParameterException, EmptyListException {
 		 List<Product> products = new ArrayList<Product>();
 		
