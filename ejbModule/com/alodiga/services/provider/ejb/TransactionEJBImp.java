@@ -530,6 +530,13 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		    }
 		    return products;
 	}
+
+	@Override
+	public List<TransactionType> getTransactionTypes()	throws GeneralException, NullParameterException, EmptyListException {
+		EJBRequest request = new EJBRequest();
+		List<TransactionType> transactionTypes = (List<TransactionType>) listEntities(Condicion.class, request, logger, getMethodName());
+	    return transactionTypes;
+	}
 	 
 
 }
