@@ -17,6 +17,7 @@
         <class>com.alodiga.services.provider.commons.models.Currency</class>
         <class>com.alodiga.services.provider.commons.models.Customer</class>
         <class>com.alodiga.services.provider.commons.models.Enterprise</class>
+        <class>com.alodiga.services.provider.commons.models.EnterCalibration</class>
         <class>com.alodiga.services.provider.commons.models.Event</class>
         <class>com.alodiga.services.provider.commons.models.Language</class>
         <class>com.alodiga.services.provider.commons.models.MetrologicalControl</class>
