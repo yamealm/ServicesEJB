@@ -26,6 +26,10 @@ import com.alodiga.services.provider.commons.genericEJB.AbstractSPEJB;
 import com.alodiga.services.provider.commons.genericEJB.EJBRequest;
 import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
+import com.alodiga.services.provider.commons.models.Braund;
+import com.alodiga.services.provider.commons.models.ControlType;
+import com.alodiga.services.provider.commons.models.EnterCalibration;
+import com.alodiga.services.provider.commons.models.Model;
 import com.alodiga.services.provider.commons.models.City;
 import com.alodiga.services.provider.commons.models.Country;
 import com.alodiga.services.provider.commons.models.CountryHasProvider;
@@ -514,5 +518,32 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
         List<Provider> providers = (List<Provider>) listEntities(Provider.class, request, logger, getMethodName());
         return providers;
     }
+    
+    public List<Braund> getBraunds() throws EmptyListException, GeneralException, NullParameterException {
+        EJBRequest request = new EJBRequest();
+        List<Braund> braunds = (List<Braund>) listEntities(Braund.class, request, logger, getMethodName());
+        return braunds;
+    }
+    
+    public List<Model> getModelsByBraund(Long braundId) throws EmptyListException, GeneralException, NullParameterException {
+        List<Model> models = null;
 
+        if (braundId==null) {
+            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "braundId"), null);
+        }
+        models = (List<Model>) getNamedQueryResult(UtilsEJB.class, QueryConstants.MODEL_BY_BRAUND, request, getMethodName(), logger, "model");
+        return models;
+    }
+
+    public List<ControlType> getControlTypes() throws EmptyListException, GeneralException, NullParameterException {
+        EJBRequest request = new EJBRequest();
+        List<ControlType> controlTypes = (List<ControlType>) listEntities(ControlType.class, request, logger, getMethodName());
+        return controlTypes;
+    }
+    
+    public List<EnterCalibration> getEnterCalibrations() throws EmptyListException, GeneralException, NullParameterException {
+        EJBRequest request = new EJBRequest();
+        List<EnterCalibration> enterCalibrations = (List<EnterCalibration>) listEntities(EnterCalibration.class, request, logger, getMethodName());
+        return enterCalibrations;
+    }
  }

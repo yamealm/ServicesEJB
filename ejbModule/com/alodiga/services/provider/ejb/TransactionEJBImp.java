@@ -538,5 +538,117 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	    return transactionTypes;
 	}
 	 
+	 public MetrologicalControl saveMetrologicalControl(MetrologicalControl metrologicalControl ,MetrologicalControlHistory metrologicalControlHistory) throws GeneralException, NullParameterException ,RegisterNotFoundException{
+			
+		  if (metrologicalControl == null) {
+	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
+	      }
+//		  try {
+//			  int currentQuantity =loadQuantityByProductId(transaction.getProduct().getId(), transaction.getCategory().getId());
+//			  validateBalanceProduct(currentQuantity, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ADD));
+//			  EntityTransaction trans = entityManager.getTransaction();
+//				try {
+//					trans.begin();
+//					Product product = transaction.getProduct();
+//					if (((SPGenericEntity) product).getPk() != null) {
+//						entityManagerWrapper.update(product);
+//					}
+//					entityManagerWrapper.save(transaction);
+//					
+//					for (ProductSerie productSerie : productSeries) {
+//						entityManagerWrapper.save(productSerie);
+//						
+//					}
+//					trans.commit();
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//					try {
+//						if (trans.isActive()) {
+//							trans.rollback();
+//						}
+//					} catch (IllegalStateException e1) {
+//						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+//					} catch (SecurityException e1) {
+//						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+//					}
+//					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+//				}
+//	        } catch (NegativeBalanceException e) {
+//	            throw  new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "MinAmountBalance"), null);
+//	        }catch (GeneralException e) {
+//	            throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+//	        }
+		 
+		 return metrologicalControl;
+	 
+	 }
+	 
+	@Override
+	public MetrologicalControlHistory loadLastMetrologicalControlHistoryByMetrologicalControlId(Long metrologicalControlId) throws GeneralException, RegisterNotFoundException, NullParameterException {
+		if (metrologicalControlId == null) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(),getMethodName(), "metrologicalControlId"), null);
+		}
+		MetrologicalControlHistory metrologicalControlHistory = null;
+		try {
+			Timestamp maxDate = (Timestamp) entityManager.createQuery(
+					"SELECT MAX(b.creationDate) FROM MetrologicalControlHistory b WHERE b.metrologicalControl.id = "+ metrologicalControlId)
+					.getSingleResult();
+			Query query = entityManager.createQuery("SELECT b FROM MetrologicalControlHistory b WHERE b.creationDate = :maxDate AND b.metrologicalControl.id = "+ metrologicalControlId);
+			query.setParameter("maxDate", maxDate);
+			List result = (List) query.setHint("toplink.refresh", "true").getResultList();
+
+			if (!result.isEmpty()) {
+				metrologicalControlHistory = ((MetrologicalControlHistory) result.get(0));
+			}
+		} catch (NoResultException ex) {
+			throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION,this.getClass(), getMethodName(), "MetrologicalControlHistory"), null);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),getMethodName(), "MetrologicalControlHistory"), null);
+		}
+		return metrologicalControlHistory;
+	}
+	
+	@Override
+	public List<MetrologicalControl> searchMetrologicalControl(EJBRequest request) throws GeneralException, NullParameterException, EmptyListException{
+		 List<MetrologicalControl> metrologicalControls = new ArrayList<MetrologicalControl>();
+	    Map<String, Object> params = request.getParams();
+	
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM MetrologicalControl t WHERE t.enabled= 1");
+	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
+	    }
+	   
+	    if (params.containsKey(QueryConstants.PARAM_BRAUND_ID)) {
+	        sqlBuilder.append(" AND t.braund.id=").append(params.get(QueryConstants.PARAM_BRAUND_ID));
+	    }
+	    if (params.containsKey(QueryConstants.PARAM_MODEL_ID)) {
+	        sqlBuilder.append(" AND t.model.id=").append(params.get(QueryConstants.PARAM_MODEL_ID));
+	    }
+	    if (params.containsKey(QueryConstants.PARAM_ENTER_CALIBRATION_ID)) {
+	        sqlBuilder.append(" AND t.enterCalibration.id=").append(params.get(QueryConstants.PARAM_ENTER_CALIBRATION_ID));
+	    }
+	    if (params.containsKey(QueryConstants.PARAM_CONTROL_TYPE_ID)) {
+	        sqlBuilder.append(" AND t.controlType.id=").append(params.get(QueryConstants.PARAM_CONTROL_TYPE_ID));
+	    }
+	    Query query = null;
+	    try {
+	        System.out.println("query:********"+sqlBuilder.toString());
+	        query = createQuery(sqlBuilder.toString());
+//	        query.setParameter("1", EjbUtils.getBeginningDate((Date) params.get(QueryConstants.PARAM_BEGINNING_DATE)));
+//	        query.setParameter("2", EjbUtils.getEndingDate((Date) params.get(QueryConstants.PARAM_ENDING_DATE)));
+	        if (request.getLimit() != null && request.getLimit() > 0) {
+	            query.setMaxResults(request.getLimit());
+	        }
+	        metrologicalControls = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (metrologicalControls.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return metrologicalControls;
+	}
 
 }
