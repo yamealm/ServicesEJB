@@ -527,11 +527,19 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
     
     public List<Model> getModelsByBraund(Long braundId) throws EmptyListException, GeneralException, NullParameterException {
         List<Model> models = null;
-
+        try {
         if (braundId==null) {
             throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "braundId"), null);
         }
-        models = (List<Model>) getNamedQueryResult(UtilsEJB.class, QueryConstants.MODEL_BY_BRAUND, request, getMethodName(), logger, "model");
+        Query query = createQuery("SELECT m FROM Model m WHERE m.braund.id =?1");
+        query.setParameter("1", braundId);
+        models = (List<Model>) query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception ex) {
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), ex.getMessage()), ex);
+	    }
+	    if (models.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
         return models;
     }
 
@@ -546,4 +554,28 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
         List<EnterCalibration> enterCalibrations = (List<EnterCalibration>) listEntities(EnterCalibration.class, request, logger, getMethodName());
         return enterCalibrations;
     }
+
+	@Override
+	public Braund saveBraund(Braund braund) throws NullParameterException, GeneralException {
+		 if (braund == null) {
+	            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "braund"), null);
+	        }
+	        return (Braund) saveEntity(braund);
+	}
+
+	@Override
+	public Model saveModel(Model model) throws NullParameterException, GeneralException {
+		if (model == null) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "model"), null);
+		}
+		return (Model) saveEntity(model);
+	}
+
+	@Override
+	public List<Model> getModels() throws EmptyListException, GeneralException, NullParameterException {
+		EJBRequest request = new EJBRequest();
+		List<Model> models = (List<Model>) listEntities(Model.class, request, logger, getMethodName());
+		return models;
+	}
+
  }

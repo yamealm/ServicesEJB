@@ -5,6 +5,7 @@
         <class>com.alodiga.services.provider.commons.models.Address</class>
         <class>com.alodiga.services.provider.commons.models.Audit</class>
         <class>com.alodiga.services.provider.commons.models.AuditAction</class>
+        <class>com.alodiga.services.provider.commons.models.Braund</class>
         <class>com.alodiga.services.provider.commons.models.Category</class>
         <class>com.alodiga.services.provider.commons.models.City</class>
         <class>com.alodiga.services.provider.commons.models.Country</class>
@@ -12,11 +13,16 @@
         <class>com.alodiga.services.provider.commons.models.County</class>
         <class>com.alodiga.services.provider.commons.models.CountyHasCity</class>
         <class>com.alodiga.services.provider.commons.models.Condicion</class>
+        <class>com.alodiga.services.provider.commons.models.ControlType</class>
         <class>com.alodiga.services.provider.commons.models.Currency</class>
         <class>com.alodiga.services.provider.commons.models.Customer</class>
         <class>com.alodiga.services.provider.commons.models.Enterprise</class>
+        <class>com.alodiga.services.provider.commons.models.EnterCalibration</class>
         <class>com.alodiga.services.provider.commons.models.Event</class>
         <class>com.alodiga.services.provider.commons.models.Language</class>
+        <class>com.alodiga.services.provider.commons.models.MetrologicalControl</class>
+        <class>com.alodiga.services.provider.commons.models.MetrologicalControlHistory</class>
+        <class>com.alodiga.services.provider.commons.models.Model</class>
         <class>com.alodiga.services.provider.commons.models.ParameterType</class>
         <class>com.alodiga.services.provider.commons.models.Permission</class>
         <class>com.alodiga.services.provider.commons.models.PermissionData</class>

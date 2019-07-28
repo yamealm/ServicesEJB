@@ -29,8 +29,11 @@ import com.alodiga.services.provider.commons.genericEJB.EJBRequest;
 import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPGenericEntity;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
+import com.alodiga.services.provider.commons.models.Braund;
 import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Condicion;
+import com.alodiga.services.provider.commons.models.MetrologicalControl;
+import com.alodiga.services.provider.commons.models.MetrologicalControlHistory;
 import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.ProductHistory;
 import com.alodiga.services.provider.commons.models.ProductSerie;
@@ -543,41 +546,46 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		  if (metrologicalControl == null) {
 	            throw new NullParameterException(logger, sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
 	      }
-//		  try {
-//			  int currentQuantity =loadQuantityByProductId(transaction.getProduct().getId(), transaction.getCategory().getId());
-//			  validateBalanceProduct(currentQuantity, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ADD));
-//			  EntityTransaction trans = entityManager.getTransaction();
-//				try {
-//					trans.begin();
-//					Product product = transaction.getProduct();
-//					if (((SPGenericEntity) product).getPk() != null) {
-//						entityManagerWrapper.update(product);
-//					}
-//					entityManagerWrapper.save(transaction);
-//					
-//					for (ProductSerie productSerie : productSeries) {
-//						entityManagerWrapper.save(productSerie);
-//						
-//					}
-//					trans.commit();
-//				} catch (Exception e) {
-//					e.printStackTrace();
-//					try {
-//						if (trans.isActive()) {
-//							trans.rollback();
-//						}
-//					} catch (IllegalStateException e1) {
-//						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
-//					} catch (SecurityException e1) {
-//						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
-//					}
-//					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
-//				}
-//	        } catch (NegativeBalanceException e) {
-//	            throw  new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "MinAmountBalance"), null);
-//	        }catch (GeneralException e) {
-//	            throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
-//	        }
+		  try {
+			 
+			  EntityTransaction trans = entityManager.getTransaction();
+				try {
+					trans.begin();
+					if (((SPGenericEntity) metrologicalControl).getPk() != null) {
+						entityManagerWrapper.update(metrologicalControl);
+						 MetrologicalControlHistory history = loadLastMetrologicalControlHistoryByMetrologicalControlId(metrologicalControl.getId());
+						 if (!EjbUtils.getBeginningDate(history.getCalibrationDate()).equals(EjbUtils.getBeginningDate(metrologicalControlHistory.getCalibrationDate()))) {
+							 metrologicalControlHistory.setCalibrationDateOld(history.getCalibrationDate());
+						 }
+						 if (!EjbUtils.getBeginningDate(history.getCalibrationDate()).equals(EjbUtils.getBeginningDate(metrologicalControlHistory.getCalibrationDate()))
+							 || !EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(metrologicalControlHistory.getExpirationDate()))) {
+							 metrologicalControlHistory.setMetrologicalControl(metrologicalControl);
+							 entityManagerWrapper.save(metrologicalControlHistory);							 							 
+						 }
+					}else {
+						entityManagerWrapper.save(metrologicalControl);	
+						metrologicalControlHistory.setMetrologicalControl(metrologicalControl);
+						entityManagerWrapper.save(metrologicalControlHistory);
+					}
+					
+					
+					trans.commit();
+				} catch (Exception e) {
+					e.printStackTrace();
+					try {
+						if (trans.isActive()) {
+							trans.rollback();
+						}
+					} catch (IllegalStateException e1) {
+						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+					} catch (SecurityException e1) {
+						throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+					}
+					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+				}
+	        } catch (GeneralException e) {
+	            throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+	        }
 		 
 		 return metrologicalControl;
 	 
@@ -614,10 +622,10 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		 List<MetrologicalControl> metrologicalControls = new ArrayList<MetrologicalControl>();
 	    Map<String, Object> params = request.getParams();
 	
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM MetrologicalControl t WHERE t.enabled= 1");
-	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
-	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
-	    }
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM MetrologicalControl t WHERE t.enabled= TRUE");
+//	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+//	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
+//	    }
 	   
 	    if (params.containsKey(QueryConstants.PARAM_BRAUND_ID)) {
 	        sqlBuilder.append(" AND t.braund.id=").append(params.get(QueryConstants.PARAM_BRAUND_ID));
@@ -651,4 +659,12 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	    return metrologicalControls;
 	}
 
+	@Override
+	public MetrologicalControl saveMetrologicalControl(MetrologicalControl metrologicalControl)throws GeneralException, NullParameterException ,RegisterNotFoundException{
+		if (metrologicalControl == null) {
+	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "braund"), null);
+	    }
+	    return (MetrologicalControl) saveEntity(metrologicalControl);
+	}
+	
 }
