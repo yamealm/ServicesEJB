@@ -577,5 +577,13 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
 		List<Model> models = (List<Model>) listEntities(Model.class, request, logger, getMethodName());
 		return models;
 	}
+	
+	@Override
+	public EnterCalibration saveEnterCalibration(EnterCalibration enterCalibration) throws NullParameterException, GeneralException{
+		if (enterCalibration == null) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "enterCalibration"), null);
+		}
+		return (EnterCalibration) saveEntity(enterCalibration);
+	}
 
  }
