@@ -133,12 +133,9 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
     }
 
 
-    public List<Customer> searchCustomers(Long enterpriseId, String login, String fullName, String email) throws EmptyListException, NullParameterException, GeneralException {
+    public List<Customer> searchCustomers(String login, String fullName, String email) throws EmptyListException, NullParameterException, GeneralException {
         List<Customer> customers = new ArrayList<Customer>();
-        if (enterpriseId == null) {
-            throw new NullParameterException( sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "enterpriseId"), null);
-        }
-        StringBuilder sqlBuilder = new StringBuilder("SELECT c FROM Customer c WHERE c.enterprise.id = ?1 AND c.enabled = 1");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT c FROM Customer c WHERE  c.enabled = 1");
         try {
             if (login != null) {
                 sqlBuilder.append(" AND c.dni like '%").append(login).append("%'");
@@ -151,7 +148,6 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
             }
 
             Query query = entityManager.createQuery(sqlBuilder.toString());
-            query.setParameter("1", enterpriseId);
             customers = query.setHint("toplink.refresh", "true").getResultList();
         } catch (NoResultException ex) {
 //            throw new EmptyListException("No distributions found");
