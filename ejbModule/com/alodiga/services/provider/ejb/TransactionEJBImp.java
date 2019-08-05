@@ -667,4 +667,24 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	    return (MetrologicalControl) saveEntity(metrologicalControl);
 	}
 	
+	public void sendNotification()throws GeneralException{
+		List<Product> products = new ArrayList<Product>();
+		List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+		
+		for (Product product: products){
+		StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="+product.getId()+ " AND p.expirationDate<now() AND t.category.id="+Category.STOCK);
+		  
+		  Query query = null;
+		    try {
+		        System.out.println("query:********"+sqlBuilder.toString());
+		        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+		        //sendNotificationMail(productSeries);
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		}
+	}
+	
+	
 }
