@@ -69,7 +69,7 @@ public class AutomaticProcessTimerEJBImp extends AbstractSPEJB implements Automa
 	    private void executeUpdate() throws Exception {
 
 	        try {
-//	            transactionEJBLocal.sendNotification();
+	            transactionEJBLocal.runAutomaticProcess();
 	            logger.info("[AutomaticProcessTimerEJB] Ejecutado la actualización");
 	            System.out.println("[AutomaticProcessTimerEJB] Ejecutado la actualización");
 	        } catch (Exception ex) {

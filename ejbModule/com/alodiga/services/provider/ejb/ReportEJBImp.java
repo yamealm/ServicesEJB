@@ -95,7 +95,7 @@ public class ReportEJBImp extends AbstractSPEJB implements ReportEJB, ReportEJBL
     }
 
     public List<Report> getReportByReportTypeId(Long reportTypeId, User currentUser) throws NullParameterException, GeneralException, EmptyListException {
-        Long profileId = currentUser.getCurrentProfile(Enterprise.ALODIGA_USA).getId();
+        Long profileId = currentUser.getCurrentProfile(Enterprise.TURBINES).getId();
         if (reportTypeId == null) {
             throw new NullParameterException( sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "reportTypeId"), null);
         } else if (currentUser == null) {
