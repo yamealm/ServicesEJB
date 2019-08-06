@@ -19,6 +19,7 @@ import org.apache.log4j.Logger;
 
 import com.alodiga.services.provider.commons.ejbs.TransactionEJB;
 import com.alodiga.services.provider.commons.ejbs.TransactionEJBLocal;
+import com.alodiga.services.provider.commons.ejbs.UtilsEJBLocal;
 import com.alodiga.services.provider.commons.exceptions.EmptyListException;
 import com.alodiga.services.provider.commons.exceptions.GeneralException;
 import com.alodiga.services.provider.commons.exceptions.NegativeBalanceException;
@@ -32,6 +33,7 @@ import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Braund;
 import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Condicion;
+import com.alodiga.services.provider.commons.models.Enterprise;
 import com.alodiga.services.provider.commons.models.MetrologicalControl;
 import com.alodiga.services.provider.commons.models.MetrologicalControlHistory;
 import com.alodiga.services.provider.commons.models.Product;
@@ -42,11 +44,14 @@ import com.alodiga.services.provider.commons.models.TransactionType;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.EjbUtils;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
+import com.alodiga.services.provider.commons.utils.ServiceMailDispatcher;
 
 @Interceptors({SPLoggerInterceptor.class, SPContextInterceptor.class})
 @Stateless(name = EjbConstants.TRANSACTION_EJB, mappedName = EjbConstants.TRANSACTION_EJB)
 @TransactionManagement(TransactionManagementType.BEAN)
 public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, TransactionEJBLocal {
+	
+	private UtilsEJBLocal  utilsEJB;
 
     private static final Logger logger = Logger.getLogger(TransactionEJBImp.class);
 
@@ -667,24 +672,80 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	    return (MetrologicalControl) saveEntity(metrologicalControl);
 	}
 	
-	public void sendNotification()throws GeneralException{
-		List<Product> products = new ArrayList<Product>();
-		List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
-		
-		for (Product product: products){
-		StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="+product.getId()+ " AND p.expirationDate<now() AND t.category.id="+Category.STOCK);
-		  
-		  Query query = null;
-		    try {
-		        System.out.println("query:********"+sqlBuilder.toString());
-		        productSeries = query.setHint("toplink.refresh", "true").getResultList();
-		        //sendNotificationMail(productSeries);
-		    } catch (Exception e) {
-		        e.printStackTrace();
-		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
-		    }
+	@Override
+	public void runAutomaticProcess()throws GeneralException{
+		try {
+			List<Product> products = getProductByCategoryId(Category.STOCK);
+			List<ProductSerie> series = new ArrayList<ProductSerie>();
+			List<ProductSerie> quarantines = new ArrayList<ProductSerie>();
+			Enterprise enterprise = utilsEJB.loadEnterprisebyId(Enterprise.TURBINES);
+			Date date = new Date(); 
+			Category category = loadCategorybyId(Category.QUARANTINE);
+			for (Product product : products) {
+				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<curdate()+1 AND t.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
+				Query query = null;
+				try {
+					System.out.println("query:********" + sqlBuilder.toString());
+					List<ProductSerie>  productSeries = query.setHint("toplink.refresh", "true").getResultList();
+					for (ProductSerie productSerie : productSeries) {
+						if ( EjbUtils.getBeginningDate(productSerie.getEndingDate()).equals( EjbUtils.getBeginningDate(date))){
+							//falta sacar de stock o control metrologico e ingresar a cuarentena
+							Transaction transaction = loadTransactionById(productSerie.getBeginTransactionId().getId());
+							transaction.setId(null);
+							transaction.setCreationDate(new Timestamp(new Date().getTime()));
+							transaction.setObservation("Entra a cuarentena por fecha de expiracion vencida");
+							productSerie.setCreationDate(new Timestamp(new Date().getTime()));
+							productSerie.setObservation("Entra a cuarentena por fecha de expiracion vencida");
+							List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
+							//sacar del stock
+							seriesSave.add(productSerie);
+							saveEgressStock(transaction, seriesSave);
+							
+							//ingresar a cuarentena
+							transaction.setCategory(category);
+							productSerie.setCategory(category);
+							seriesSave = new ArrayList<ProductSerie>();
+							seriesSave.add(productSerie);
+							saveTransactionStock(transaction, seriesSave);
+							quarantines.add(productSerie);
+						}else{
+							series.add(productSerie);
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION,this.getClass(), getMethodName(), e.getMessage()), null);
+				}
+			}
+			if (!quarantines.isEmpty()) {
+				ServiceMailDispatcher.sendQuarantineDataMail(enterprise, quarantines, "Cuarentena");
+				// sendNotificationMailQuarine(productSeries);
+			}
+			if (!series.isEmpty()) {
+				ServiceMailDispatcher.sendPendingDataMail(enterprise, series, "Productos a vencer");
+				// sendNotificationMailStock(productSeries);
+			}
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), e.getMessage()), null);
 		}
 	}
+	
+	public List<Product> getProductByCategoryId(Long categoryId) throws GeneralException{
+		 List<Product> products = new ArrayList<Product>();
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT DISTINCT(p) FROM Product p, ProductSerie s WHERE p.id=s.product.id AND s.endingDate is null AND and b.expirationDate<curdate()+1 AND t.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
+	    Query query = null;
+	    try {
+	        query = createQuery(sqlBuilder.toString());
+	        products = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	    	 e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    return products;
+	}
+
 	
 	
 }

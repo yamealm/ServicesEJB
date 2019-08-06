@@ -1,5 +1,8 @@
 package com.alodiga.services.provider.ejb;
 
+import com.alodiga.services.provider.commons.ejbs.AutomaticProcessTimerEJB;
+import com.alodiga.services.provider.commons.ejbs.AutomaticProcessTimerEJBLocal;
+import com.alodiga.services.provider.commons.ejbs.TransactionEJBLocal;
 import com.alodiga.services.provider.commons.genericEJB.AbstractSPEJB;
 import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
@@ -23,9 +26,9 @@ import org.apache.log4j.Logger;
 @TransactionManagement(TransactionManagementType.BEAN)
 public class AutomaticProcessTimerEJBImp extends AbstractSPEJB implements AutomaticProcessTimerEJB, AutomaticProcessTimerEJBLocal {
 
-	 private static final Logger logger = Logger.getLogger(TransferToTimerEJBImp.class);
+	 private static final Logger logger = Logger.getLogger(AutomaticProcessTimerEJBImp.class);
 	    @EJB
-	    private TopUpProductEJBLocal topUpProductEJB;
+	    private TransactionEJBLocal transactionEJBLocal;
 	    @Resource
 	    private SessionContext ctx;
 	    Calendar initialExpiration;
@@ -66,7 +69,7 @@ public class AutomaticProcessTimerEJBImp extends AbstractSPEJB implements Automa
 	    private void executeUpdate() throws Exception {
 
 	        try {
-//	            topUpProductEJB.executeTransferToTopUpUpdate();
+//	            transactionEJBLocal.sendNotification();
 	            logger.info("[AutomaticProcessTimerEJB] Ejecutado la actualización");
 	            System.out.println("[AutomaticProcessTimerEJB] Ejecutado la actualización");
 	        } catch (Exception ex) {
