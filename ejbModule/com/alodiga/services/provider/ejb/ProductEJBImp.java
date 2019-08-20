@@ -304,5 +304,39 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    return metrologicalControls;
 	}
 	
+	public List<Product> getProductsByParams(EJBRequest request) throws GeneralException, EmptyListException, NullParameterException {
+
+		 List<Product> products = new ArrayList<Product>();
+		    Map<String, Object> params = request.getParams();
+		
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM Product p WHERE p.enabled =1");
+		    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+		        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
+		    }
+		
+		    if (params.containsKey(QueryConstants.PARAM_FILTER_TEXT)) {
+		        sqlBuilder.append(" AND ").append(params.get(QueryConstants.PARAM_FILTER_TEXT));
+		    }
+		    
+		    Query query = null;
+		    try {
+		        System.out.println("query:********"+sqlBuilder.toString());
+		        query = createQuery(sqlBuilder.toString());
+		        if (request.getLimit() != null && request.getLimit() > 0) {
+		            query.setMaxResults(request.getLimit());
+		        }
+		        if (request.getFirst() != null && request.getFirst() >= 0) {
+		            query.setFirstResult(request.getFirst());
+		        }
+		        products = query.setHint("toplink.refresh", "true").getResultList();
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		    if (products.isEmpty()) {
+		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		    }
+		    return products;
+    }
 
 }
