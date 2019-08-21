@@ -31,6 +31,7 @@ import com.alodiga.services.provider.commons.models.MetrologicalControlHistory;
 import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Provider;
+import com.alodiga.services.provider.commons.models.TransactionType;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.EjbUtils;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
@@ -166,9 +167,16 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    if (params.containsKey(QueryConstants.PARAM_WORK_ORDER)) {
 	        sqlBuilder.append(" AND p.orderWord=").append(params.get(QueryConstants.PARAM_WORK_ORDER));
 	    }
-//	    if (params.containsKey(QueryConstants.PARAM_TRANSACTION_TYPE_ID)) { //pendiente
-//	        sqlBuilder.append(" AND p.condition.id=").append(params.get(QueryConstants.PARAM_TRANSACTION_TYPE_ID));
-//	    }
+	    if (params.containsKey(QueryConstants.PARAM_CATEGORY_ID)) {
+	    	  sqlBuilder.append(" AND p.category.id=").append(params.get(QueryConstants.PARAM_CATEGORY_ID));
+	    }
+	    if (params.containsKey(QueryConstants.PARAM_TRANSACTION_TYPE_ID)) { //pendiente
+	    	Long transactionType = (Long) params.get(QueryConstants.PARAM_TRANSACTION_TYPE_ID);
+			if (transactionType.equals(TransactionType.ADD))
+				sqlBuilder.append(" AND p.endingTransactionId.id is null");
+			else if (transactionType.equals(TransactionType.REMOVE))
+				sqlBuilder.append(" AND p.endingTransactionId.id is not null");
+		}
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
@@ -245,7 +253,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 calendar.setTime(today);
 		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
 		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.cure <= '"+ timestampOldDate+"'");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.cure >= '"+ timestampOldDate+"'");
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
