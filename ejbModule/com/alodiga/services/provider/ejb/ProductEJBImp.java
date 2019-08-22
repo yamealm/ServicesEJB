@@ -291,6 +291,12 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    if (params.containsKey(QueryConstants.PARAM_SERIAL)) {
 	        sqlBuilder.append(" AND h.metrologicalControl.serie=").append(params.get(QueryConstants.PARAM_SERIAL));
 	    }
+	    if (params.containsKey(QueryConstants.PARAM_DESIGNATION)) {
+	        sqlBuilder.append(" AND h.metrologicalControl.designation=").append(params.get(QueryConstants.PARAM_DESIGNATION));
+	    }
+	    if (params.containsKey(QueryConstants.PARAM_INSTRUMENT)) {
+	        sqlBuilder.append(" AND h.metrologicalControl.instrument=").append(params.get(QueryConstants.PARAM_INSTRUMENT));
+	    }
 	    sqlBuilder.append(" AND ORDER BY ID DESC");
 	    Query query = null;
 	    try {
@@ -346,5 +352,29 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		    }
 		    return products;
     }
+	
+	@Override
+	public List<MetrologicalControlHistory> getMetrologicalControlDefeated(int dayEnding) throws GeneralException, NullParameterException, EmptyListException{
+		 List<MetrologicalControlHistory> controlHistories = new ArrayList<MetrologicalControlHistory>();
+		 Timestamp today =  new Timestamp(new java.util.Date().getTime());
+		 Calendar calendar = Calendar.getInstance();
+		 calendar.setTime(today);
+		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
+		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM MetrologicalControlHistory p WHERE p.expirationDate <= '"+ timestampOldDate+"'");
+	    Query query = null;
+	    try {
+	        System.out.println("query:********"+sqlBuilder.toString());
+	        query = createQuery(sqlBuilder.toString());
+	        controlHistories = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (controlHistories.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return controlHistories;
+	}
 
 }
