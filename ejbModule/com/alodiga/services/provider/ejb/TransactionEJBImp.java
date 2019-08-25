@@ -542,7 +542,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	@Override
 	public List<TransactionType> getTransactionTypes()	throws GeneralException, NullParameterException, EmptyListException {
 		EJBRequest request = new EJBRequest();
-		List<TransactionType> transactionTypes = (List<TransactionType>) listEntities(Condicion.class, request, logger, getMethodName());
+		List<TransactionType> transactionTypes = (List<TransactionType>) listEntities(TransactionType.class, request, logger, getMethodName());
 	    return transactionTypes;
 	}
 	 
@@ -682,7 +682,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			Date date = new Date(); 
 			Category category = loadCategorybyId(Category.QUARANTINE);
 			for (Product product : products) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<curdate()+1 AND t.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
+				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<curdate()+5 AND t.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
 				Query query = null;
 				try {
 					System.out.println("query:********" + sqlBuilder.toString());
@@ -694,7 +694,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 							transaction.setId(null);
 							transaction.setCreationDate(new Timestamp(new Date().getTime()));
 							transaction.setObservation("Entra a cuarentena por fecha de expiracion vencida");
-							productSerie.setCreationDate(new Timestamp(new Date().getTime()));
+							productSerie.setEndingDate(new Timestamp(new Date().getTime()));
 							productSerie.setObservation("Entra a cuarentena por fecha de expiracion vencida");
 							List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
 							//sacar del stock
@@ -703,7 +703,10 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 							
 							//ingresar a cuarentena
 							transaction.setCategory(category);
+							productSerie.setId(null);
 							productSerie.setCategory(category);
+							productSerie.setEndingDate(null);
+							productSerie.setCreationDate(new Timestamp(new Date().getTime()));
 							seriesSave = new ArrayList<ProductSerie>();
 							seriesSave.add(productSerie);
 							saveTransactionStock(transaction, seriesSave);

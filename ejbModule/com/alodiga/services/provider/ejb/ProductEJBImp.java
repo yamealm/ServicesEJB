@@ -274,7 +274,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 List<MetrologicalControlHistory> metrologicalControls = new ArrayList<MetrologicalControlHistory>();
 	    Map<String, Object> params = request.getParams();
 	  //revisar query para que devuelva el ultimo
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT h FROM MetrologicalControlHistory h, MetrologicalControl m WHERE h.metrologicalControl.id=m.id AND m.expirationDate BETWEEN ?1 AND ?2");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT h FROM MetrologicalControlHistory h, MetrologicalControl m WHERE h.metrologicalControl.id=m.id AND h.expirationDate BETWEEN ?1 AND ?2");
 	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
 	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
 	    }
@@ -297,7 +297,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    if (params.containsKey(QueryConstants.PARAM_INSTRUMENT)) {
 	        sqlBuilder.append(" AND h.metrologicalControl.instrument=").append(params.get(QueryConstants.PARAM_INSTRUMENT));
 	    }
-	    sqlBuilder.append(" AND ORDER BY ID DESC");
+	    sqlBuilder.append(" ORDER BY h.id DESC");
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
