@@ -750,5 +750,21 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 
 	
+	@Override
+	public List<MetrologicalControl> searchMetrologicalControl() throws GeneralException,  EmptyListException{
+		 List<MetrologicalControl> metrologicalControls = new ArrayList<MetrologicalControl>();
+			
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT m FROM MetrologicalControl m " );
+		    try {
+		         Query query = entityManager.createQuery(sqlBuilder.toString());
+		         metrologicalControls = query.setHint("toplink.refresh", "true").getResultList();
+		    } catch (Exception e) {
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		    if (metrologicalControls.isEmpty()) {
+		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		    }
+		    return metrologicalControls;
+	}
 	
 }
