@@ -39,6 +39,7 @@ import com.alodiga.services.provider.commons.models.Currency;
 import com.alodiga.services.provider.commons.models.Enterprise;
 import com.alodiga.services.provider.commons.models.Language;
 import com.alodiga.services.provider.commons.models.Provider;
+import com.alodiga.services.provider.commons.models.QuarantineStatus;
 import com.alodiga.services.provider.commons.models.State;
 import com.alodiga.services.provider.commons.models.TinType;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
@@ -584,6 +585,13 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
 			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "enterCalibration"), null);
 		}
 		return (EnterCalibration) saveEntity(enterCalibration);
+	}
+
+	@Override
+	public List<QuarantineStatus> getQuaratineStatus()throws EmptyListException, GeneralException, NullParameterException {
+		 EJBRequest request = new EJBRequest();
+		  List<QuarantineStatus> quarantineStatus = (List<QuarantineStatus>) listEntities(QuarantineStatus.class, request, logger, getMethodName());
+		  return quarantineStatus;
 	}
 
  }
