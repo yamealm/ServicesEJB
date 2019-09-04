@@ -36,6 +36,7 @@
         <class>com.alodiga.services.provider.commons.models.Profile</class>
         <class>com.alodiga.services.provider.commons.models.ProfileData</class>
         <class>com.alodiga.services.provider.commons.models.Provider</class>
+        <class>com.alodiga.services.provider.commons.models.QuarantineStatus</class>
         <class>com.alodiga.services.provider.commons.models.Report</class>
         <class>com.alodiga.services.provider.commons.models.ReportHasProfile</class>
         <class>com.alodiga.services.provider.commons.models.Report</class>
