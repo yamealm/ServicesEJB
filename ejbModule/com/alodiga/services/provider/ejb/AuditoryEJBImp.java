@@ -19,6 +19,8 @@ import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Audit;
 import com.alodiga.services.provider.commons.models.AuditAction;
+import com.alodiga.services.provider.commons.models.Profile;
+import com.alodiga.services.provider.commons.models.User;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.EjbUtils;
 import com.alodiga.services.provider.commons.utils.GeneralUtils;
@@ -36,10 +38,6 @@ public class AuditoryEJBImp extends AbstractSPEJB implements AuditoryEJB, Audito
 
     private static final Logger logger = Logger.getLogger(AuditoryEJBImp.class);
 
-//    public Audit deleteAudit(EJBRequest request) throws GeneralException, NullParameterException {
-//        return null;
-//    }
-//
     public List<Audit> getLastAudits(EJBRequest request) throws GeneralException, RegisterNotFoundException, NullParameterException, EmptyListException {
         List<Audit> audits = null;
         String nameQuery = null;
@@ -187,5 +185,55 @@ public class AuditoryEJBImp extends AbstractSPEJB implements AuditoryEJB, Audito
             throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
         }
         return audits;
+    }
+    
+    @Override
+    public String getNaturalFieldProfile(EJBRequest request1, EJBRequest request2) throws NullParameterException, GeneralException
+    {
+        Profile rolOld = (Profile) request1.getParam();
+        Profile rolNew = (Profile) request2.getParam();
+        String result = "";
+
+        if (rolOld == null || rolNew == null) {
+            logger.error("Parameters must not be null in method getNaturalFieldRol.");
+            throw new NullParameterException("Parameters  must not be null.");
+        }
+        try {
+            Profile rol = new Profile();
+            result = rol.getNaturalField(rolOld, rolNew);
+        } catch (Exception e) {
+            throw new GeneralException("General Error in method getNaturalFieldRol.");
+        }
+
+        if (result == null || result.isEmpty()) {
+            logger.error("Empty Result Exception in method getNaturalFieldRol.");
+            throw new GeneralException("Empty Result in method getNaturalFieldRol.");
+        }
+        return result;
+    }
+
+    @Override
+    public String getNaturalFieldUser(EJBRequest request1, EJBRequest request2) throws NullParameterException, GeneralException
+    {
+        User userOld = (User) request1.getParam();
+        User userNew = (User) request2.getParam();
+        String result = "";
+
+        if (userOld == null || userNew == null) {
+            logger.error("Parameters must not be null in method getNaturalFieldUser.");
+            throw new NullParameterException("Parameters  must not be null.");
+        }
+        try {
+            User user = new User();
+            result = user.getNaturalField(userOld, userNew);
+        } catch (Exception e) {
+            throw new GeneralException("General Error in method getNaturalFieldUser.");
+        }
+
+        if (result == null || result.isEmpty()) {
+            logger.error("Empty Result Exception in method getNaturalFieldUser.");
+            throw new GeneralException("Empty Result in method getNaturalFieldUser.");
+        }
+        return result;
     }
 }
