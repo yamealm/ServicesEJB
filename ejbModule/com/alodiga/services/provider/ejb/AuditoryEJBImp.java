@@ -24,7 +24,9 @@ import com.alodiga.services.provider.commons.models.Customer;
 import com.alodiga.services.provider.commons.models.Event;
 import com.alodiga.services.provider.commons.models.MetrologicalControl;
 import com.alodiga.services.provider.commons.models.Model;
+import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.Profile;
+import com.alodiga.services.provider.commons.models.Provider;
 import com.alodiga.services.provider.commons.models.User;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.EjbUtils;
@@ -331,6 +333,54 @@ public class AuditoryEJBImp extends AbstractSPEJB implements AuditoryEJB, Audito
     try {
     	Model rol = new Model();
         result = rol.getNaturalField(controlOld, controlNew);
+    } catch (Exception e) {
+        throw new GeneralException("General Error in method getNaturalFieldRol.");
+    }
+
+    if (result == null || result.isEmpty()) {
+        logger.error("Empty Result Exception in method getNaturalFieldMetrologicalControl.");
+        throw new GeneralException("Empty Result in method getNaturalFieldMetrologicalControl.");
+    }
+    return result;
+	}
+
+	@Override
+	public String getNaturalFieldProduct(EJBRequest request1, EJBRequest request2) throws NullParameterException, GeneralException{
+	Product controlOld = (Product) request1.getParam();
+	Product controlNew = (Product) request2.getParam();
+    String result = "";
+
+    if (controlOld == null || controlNew == null) {
+        logger.error("Parameters must not be null in method getNaturalFieldRol.");
+        throw new NullParameterException("Parameters  must not be null.");
+    }
+    try {
+    	Product product = new Product();
+        result = product.getNaturalField(controlOld, controlNew);
+    } catch (Exception e) {
+        throw new GeneralException("General Error in method getNaturalFieldRol.");
+    }
+
+    if (result == null || result.isEmpty()) {
+        logger.error("Empty Result Exception in method getNaturalFieldMetrologicalControl.");
+        throw new GeneralException("Empty Result in method getNaturalFieldMetrologicalControl.");
+    }
+    return result;
+	}
+
+	@Override
+	public String getNaturalFieldProvider(EJBRequest request1, EJBRequest request2) throws NullParameterException, GeneralException{
+	Provider controlOld = (Provider) request1.getParam();
+	Provider controlNew = (Provider) request2.getParam();
+    String result = "";
+
+    if (controlOld == null || controlNew == null) {
+        logger.error("Parameters must not be null in method getNaturalFieldRol.");
+        throw new NullParameterException("Parameters  must not be null.");
+    }
+    try {
+    	Provider provider = new Provider();
+        result = provider.getNaturalField(controlOld, controlNew);
     } catch (Exception e) {
         throw new GeneralException("General Error in method getNaturalFieldRol.");
     }
