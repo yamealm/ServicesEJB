@@ -33,9 +33,11 @@ import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Braund;
 import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Condicion;
+import com.alodiga.services.provider.commons.models.EnterCalibration;
 import com.alodiga.services.provider.commons.models.Enterprise;
 import com.alodiga.services.provider.commons.models.MetrologicalControl;
 import com.alodiga.services.provider.commons.models.MetrologicalControlHistory;
+import com.alodiga.services.provider.commons.models.Model;
 import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.ProductHistory;
 import com.alodiga.services.provider.commons.models.ProductSerie;
@@ -265,6 +267,12 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	public ProductHistory saveProductHistory(EJBRequest request) throws GeneralException, NullParameterException {
 		return (ProductHistory) saveEntity(request, logger, getMethodName());
 	}
+	
+	@Override
+	public MetrologicalControlHistory saveMetrologicalControlHistory(EJBRequest request) throws GeneralException, NullParameterException {
+		return (MetrologicalControlHistory) saveEntity(request, logger, getMethodName());
+	}
+	
 	
 	private ProductSerie saveProductSerie(EJBRequest request) throws GeneralException, NullParameterException {
 		return (ProductSerie) saveEntity(request, logger, getMethodName());
@@ -682,7 +690,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			Date date = new Date(); 
 			Category category = loadCategorybyId(Category.QUARANTINE);
 			for (Product product : products) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<curdate()+5 AND t.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
+				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<curdate()+5 AND p.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
 				Query query = null;
 				try {
 					System.out.println("query:********" + sqlBuilder.toString());
@@ -727,6 +735,53 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			if (!series.isEmpty()) {
 				ServiceMailDispatcher.sendPendingDataMail(enterprise, series, "Productos a vencer");
 				// sendNotificationMailStock(productSeries);
+			}
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), e.getMessage()), null);
+		}
+	}
+	
+	@Override
+	public void runAutomaticProcessMetrologicalControl()throws GeneralException{
+		try {
+			List<MetrologicalControl> controls = searchMetrologicalControl();
+			List<MetrologicalControlHistory> histories = new ArrayList<MetrologicalControlHistory>();
+			List<MetrologicalControlHistory> quarantines = new ArrayList<MetrologicalControlHistory>();
+			Enterprise enterprise = utilsEJB.loadEnterprisebyId(Enterprise.TURBINES);
+			Date date = new Date(); 
+			Category category = loadCategorybyId(Category.QUARANTINE);
+			for (MetrologicalControl control : controls) {
+				StringBuilder sqlBuilder = new StringBuilder("SELECT m FROM MetrologicalControlHistory m WHERE m.metrologicalControl.id="+ control.getId() + "  b.expirationDate<curdate()+5 AND m.category.id =" +Category.METEOROLOGICAL_CONTROL);
+				Query query = null;
+				try {
+					System.out.println("query:********" + sqlBuilder.toString());
+					List<MetrologicalControlHistory>  histories2 = query.setHint("toplink.refresh", "true").getResultList();
+					for (MetrologicalControlHistory history : histories2) {
+						if (EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))) {
+							// ingresar control metrologico a quarentena
+							history.setObservation("Entro a cuarentena Fecha de Calibracion Vencida");
+							history.setCategory(category);
+							EJBRequest request = new EJBRequest();
+							request.setParam(history);
+							saveMetrologicalControlHistory(request);
+							quarantines.add(history);
+
+						} else {
+							histories.add(history);
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION,this.getClass(), getMethodName(), e.getMessage()), null);
+				}
+			}
+			if (!quarantines.isEmpty()) {
+				ServiceMailDispatcher.sendQuarantineDataMailControl(enterprise, quarantines, "Cuarentena");
+			}
+			if (!histories.isEmpty()) {
+				ServiceMailDispatcher.sendPendingDataMailControl(enterprise, histories, "Productos a vencer");
 			}
 		} catch (Exception e) {
 			

@@ -182,7 +182,7 @@ public class AccessControlEJBImp extends AbstractSPEJB implements AccessControlE
         return user;
     }
 
-    @Override
+
     public List<User> getUsersWithParams(EJBRequest request) throws EmptyListException, GeneralException, NullParameterException {
         List<User> users = null;
         Map<String, Object> params = request.getParams();

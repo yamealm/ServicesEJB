@@ -75,7 +75,7 @@ public class AuditoryEJBImp extends AbstractSPEJB implements AuditoryEJB, Audito
             throw new NullParameterException( sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
         }
         if (params.containsKey(QueryConstants.PARAM_RESPONSIBLE_ID)) {
-            sql += " AND a.responsibleId LIKE '%" + params.get(QueryConstants.PARAM_RESPONSIBLE_ID) + "%'";
+            sql += " AND a.user.id =" + params.get(QueryConstants.PARAM_USER_ID);
         }
         if (params.containsKey(QueryConstants.PARAM_RESPONSIBLE_TYPE)) {
             sql += " AND a.responsibleType LIKE '%" + params.get(QueryConstants.PARAM_RESPONSIBLE_TYPE) + "%'";
