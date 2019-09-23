@@ -274,10 +274,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 List<MetrologicalControlHistory> metrologicalControls = new ArrayList<MetrologicalControlHistory>();
 	    Map<String, Object> params = request.getParams();
 	  //revisar query para que devuelva el ultimo
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT h FROM MetrologicalControlHistory h, MetrologicalControl m WHERE h.metrologicalControl.id=m.id AND h.expirationDate BETWEEN ?1 AND ?2");
-	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
-	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
-	    }
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT h FROM MetrologicalControlHistory h, MetrologicalControl m WHERE h.metrologicalControl.id=m.id ");
 	
 	    if (params.containsKey(QueryConstants.PARAM_BRAUND_ID)) {
 	        sqlBuilder.append(" AND h.metrologicalControl.braund.id=").append(params.get(QueryConstants.PARAM_BRAUND_ID));
@@ -289,21 +286,27 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	        sqlBuilder.append(" AND h.metrologicalControl.enterCalibration.id=").append(params.get(QueryConstants.PARAM_ENTER_CALIBRATION_ID));
 	    }
 	    if (params.containsKey(QueryConstants.PARAM_SERIAL)) {
-	        sqlBuilder.append(" AND h.metrologicalControl.serie=").append(params.get(QueryConstants.PARAM_SERIAL));
+	        sqlBuilder.append(" AND h.metrologicalControl.serie=").append("'").append(params.get(QueryConstants.PARAM_SERIAL)).append("'");
 	    }
 	    if (params.containsKey(QueryConstants.PARAM_DESIGNATION)) {
-	        sqlBuilder.append(" AND h.metrologicalControl.designation=").append(params.get(QueryConstants.PARAM_DESIGNATION));
+	        sqlBuilder.append(" AND h.metrologicalControl.designation=").append("'").append(params.get(QueryConstants.PARAM_DESIGNATION)).append("'");
 	    }
 	    if (params.containsKey(QueryConstants.PARAM_INSTRUMENT)) {
-	        sqlBuilder.append(" AND h.metrologicalControl.instrument=").append(params.get(QueryConstants.PARAM_INSTRUMENT));
+	        sqlBuilder.append(" AND h.metrologicalControl.instrument=").append("'").append(params.get(QueryConstants.PARAM_INSTRUMENT)).append("'");
 	    }
+	    if (params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) && params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+        	sqlBuilder.append(" AND h.expirationDate BETWEEN ?1 AND ?2");
+        }
 	    sqlBuilder.append(" ORDER BY h.id DESC");
 	    Query query = null;
 	    try {
-	        System.out.println("query:********"+sqlBuilder.toString());
-	        query = createQuery(sqlBuilder.toString());
-	        query.setParameter("1", EjbUtils.getBeginningDate((Date) params.get(QueryConstants.PARAM_BEGINNING_DATE)));
-	        query.setParameter("2", EjbUtils.getEndingDate((Date) params.get(QueryConstants.PARAM_ENDING_DATE)));
+	    	System.out.println("query:********"+sqlBuilder.toString());
+	    	query = createQuery(sqlBuilder.toString());
+	        if (params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) && params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+	        	query.setParameter("1", EjbUtils.getBeginningDate((Date) params.get(QueryConstants.PARAM_BEGINNING_DATE)));
+	        	query.setParameter("2", EjbUtils.getEndingDate((Date) params.get(QueryConstants.PARAM_ENDING_DATE)));
+	        }
+	        
 	        if (request.getLimit() != null && request.getLimit() > 0) {
 	            query.setMaxResults(request.getLimit());
 	        }

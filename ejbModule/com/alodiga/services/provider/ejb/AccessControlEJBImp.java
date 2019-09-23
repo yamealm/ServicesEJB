@@ -1,5 +1,7 @@
 package com.alodiga.services.provider.ejb;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +30,13 @@ import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Permission;
 import com.alodiga.services.provider.commons.models.PermissionHasProfile;
+import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Profile;
 import com.alodiga.services.provider.commons.models.ProfileData;
+import com.alodiga.services.provider.commons.models.TransactionType;
 import com.alodiga.services.provider.commons.models.User;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
+import com.alodiga.services.provider.commons.utils.EjbUtils;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
 
 @Interceptors({SPLoggerInterceptor.class, SPContextInterceptor.class})
@@ -177,5 +182,31 @@ public class AccessControlEJBImp extends AbstractSPEJB implements AccessControlE
         return user;
     }
 
+    @Override
+    public List<User> getUsersWithParams(EJBRequest request) throws EmptyListException, GeneralException, NullParameterException {
+        List<User> users = null;
+        Map<String, Object> params = request.getParams();
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT s FROM User s WHERE s.enabled = 1");
+	    if (params.containsKey(QueryConstants.PARAM_LOGIN)) {
+	        sqlBuilder.append(" AND s.login=").append(params.get(QueryConstants.PARAM_LOGIN));
+	    }
 
+	    Query query = null;
+	    try {
+	        System.out.println("query:********"+sqlBuilder.toString());
+	        query = createQuery(sqlBuilder.toString());
+	        if (request.getLimit() != null && request.getLimit() > 0) {
+	            query.setMaxResults(request.getLimit());
+	        }
+	        users = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (users.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+        
+        return users;
+    }
 }
