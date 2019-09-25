@@ -32,6 +32,7 @@ import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Provider;
 import com.alodiga.services.provider.commons.models.TransactionType;
+import com.alodiga.services.provider.commons.models.User;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.EjbUtils;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
@@ -380,4 +381,44 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    return controlHistories;
 	}
 
+	@Override
+	public boolean existProductByPartNumber(EJBRequest request) throws NullParameterException, GeneralException {
+		boolean exist = false;
+		List<Product> products = new ArrayList<Product>();
+		Map<String, Object> params = request.getParams();
+
+		if (!params.containsKey(QueryConstants.PARAM_PART_NUMBER)) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(),
+					getMethodName(), QueryConstants.PARAM_PART_NUMBER), null);
+		}
+
+		try {
+			products = (List<Product>) getNamedQueryResult(Product.class, QueryConstants.LOAD_PRODUCT_BY_PART_NUMBER,request, getMethodName(), logger, "Product");
+		} catch (EmptyListException e) {
+			exist = false;
+		}
+		if (!products.isEmpty())
+			exist = true;
+
+		return exist;
+	}
+	
+	@Override
+	public Product loadProductByPartNumber(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
+		List<Product> products = new ArrayList<Product>();
+		Map<String, Object> params = request.getParams();
+
+		if (!params.containsKey(QueryConstants.PARAM_PART_NUMBER)) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(),
+					getMethodName(), QueryConstants.PARAM_PART_NUMBER), null);
+		}
+
+		try {
+			products = (List<Product>) getNamedQueryResult(Product.class, QueryConstants.LOAD_PRODUCT_BY_PART_NUMBER,request, getMethodName(), logger, "Product");
+		} catch (EmptyListException e) {
+			 throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName(), "user"), null);
+        }
+
+        return products.get(0);
+	}
 }
