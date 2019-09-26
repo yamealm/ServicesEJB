@@ -818,5 +818,23 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		    }
 		    return metrologicalControls;
 	}
+
+	@Override
+	public TransactionType loadTransactionTypebyId(Long id)throws NullParameterException, RegisterNotFoundException, GeneralException {
+		 if (id == null) {
+	            throw new NullParameterException(" parameter id cannot be null in loadTransactionTypebyId.");
+	      }
+		 TransactionType transactionType = null;
+	      try {
+	          Query query = createQuery("SELECT tt FROM TransactionType tt WHERE tt.id = ?1");
+	          query.setParameter("1", id);
+	          transactionType = (TransactionType) query.setHint("toplink.refresh", "true").getSingleResult();
+	      } catch (NoResultException ex) {
+	            throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, TransactionType.class.getSimpleName(), "loadTransactionTypebyId", TransactionType.class.getSimpleName(), null), ex);
+	      } catch (Exception ex) {
+	            throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), ex.getMessage()), ex);
+	      }
+	      return transactionType;
+	}
 	
 }

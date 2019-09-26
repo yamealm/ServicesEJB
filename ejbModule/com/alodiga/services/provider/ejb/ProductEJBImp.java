@@ -174,7 +174,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    if (params.containsKey(QueryConstants.PARAM_TRANSACTION_TYPE_ID)) { //pendiente
 	    	Long transactionType = (Long) params.get(QueryConstants.PARAM_TRANSACTION_TYPE_ID);
 			if (transactionType.equals(TransactionType.ADD))
-				sqlBuilder.append(" AND p.endingTransactionId.id is null");
+				sqlBuilder.append(" AND p.endingTransactionId is null");
 			else if (transactionType.equals(TransactionType.REMOVE))
 				sqlBuilder.append(" AND p.endingTransactionId.id is not null");
 		}
