@@ -228,7 +228,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 calendar.setTime(today);
 		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
 		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate <= '"+ timestampOldDate+"'");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate BETWEEN '"+ today+"' AND '"+timestampOldDate+"'");
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
