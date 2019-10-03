@@ -571,6 +571,10 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 							 || !EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(metrologicalControlHistory.getExpirationDate()))) {
 							 metrologicalControlHistory.setMetrologicalControl(metrologicalControl);
 							 entityManagerWrapper.save(metrologicalControlHistory);							 							 
+						 }else{
+							 history.setCategory(metrologicalControlHistory.getCategory());
+							 history.setObservation(metrologicalControlHistory.getObservation());
+							 entityManagerWrapper.update(history);	
 						 }
 					}else {
 						entityManagerWrapper.save(metrologicalControl);	
@@ -632,7 +636,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		 List<MetrologicalControl> metrologicalControls = new ArrayList<MetrologicalControl>();
 	    Map<String, Object> params = request.getParams();
 	
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM MetrologicalControl t WHERE t.enabled= TRUE");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM MetrologicalControl t WHERE t.enabled= TRUE OR t.enabled= FALSE");
 //	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
 //	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
 //	    }

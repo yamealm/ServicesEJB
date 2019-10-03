@@ -286,6 +286,9 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    if (params.containsKey(QueryConstants.PARAM_ENTER_CALIBRATION_ID)) {
 	        sqlBuilder.append(" AND h.metrologicalControl.enterCalibration.id=").append(params.get(QueryConstants.PARAM_ENTER_CALIBRATION_ID));
 	    }
+	    if (params.containsKey(QueryConstants.PARAM_CATEGORY_ID)) {
+	        sqlBuilder.append(" AND h.category.id=").append(params.get(QueryConstants.PARAM_CATEGORY_ID));
+	    }
 	    if (params.containsKey(QueryConstants.PARAM_SERIAL)) {
 	        sqlBuilder.append(" AND h.metrologicalControl.serie=").append("'").append(params.get(QueryConstants.PARAM_SERIAL)).append("'");
 	    }
@@ -298,6 +301,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    if (params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) && params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
         	sqlBuilder.append(" AND h.expirationDate BETWEEN ?1 AND ?2");
         }
+	    
 	    sqlBuilder.append(" ORDER BY h.id DESC");
 	    Query query = null;
 	    try {
