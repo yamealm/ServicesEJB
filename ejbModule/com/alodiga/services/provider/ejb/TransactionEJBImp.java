@@ -2,11 +2,13 @@ package com.alodiga.services.provider.ejb;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionManagement;
 import javax.ejb.TransactionManagementType;
@@ -49,7 +51,7 @@ import com.alodiga.services.provider.commons.utils.ServiceMailDispatcher;
 @Stateless(name = EjbConstants.TRANSACTION_EJB, mappedName = EjbConstants.TRANSACTION_EJB)
 @TransactionManagement(TransactionManagementType.BEAN)
 public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, TransactionEJBLocal {
-	
+	@EJB
 	private UtilsEJBLocal  utilsEJB;
 
     private static final Logger logger = Logger.getLogger(TransactionEJBImp.class);
@@ -346,7 +348,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		EntityTransaction trans = entityManager.getTransaction();
 		try {
 			trans.begin();
-			entityManagerWrapper.save(transaction);
+			transaction =(Transaction) entityManagerWrapper.save(transaction);
 			for (ProductSerie productSerie : productSeries) {
 				if (productSerie.getId() != null) {
 					productSerie.setEndingTransactionId(transaction);
@@ -689,39 +691,49 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			List<ProductSerie> quarantines = new ArrayList<ProductSerie>();
 			Enterprise enterprise = utilsEJB.loadEnterprisebyId(Enterprise.TURBINES);
 			Date date = new Date(); 
+			Timestamp today =  new Timestamp(new java.util.Date().getTime());
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(today);
+			calendar.add(Calendar.DAY_OF_YEAR, 5);
+			Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
 			Category category = loadCategorybyId(Category.QUARANTINE);
 			for (Product product : products) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<=curdate()+5 AND p.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
+				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND p.expirationDate<='"+timestampOldDate+"' AND p.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
 				Query query = null;
 				try {
 					System.out.println("query:********" + sqlBuilder.toString());
+					query = createQuery(sqlBuilder.toString());
 					List<ProductSerie>  productSeries = query.setHint("toplink.refresh", "true").getResultList();
 					for (ProductSerie productSerie : productSeries) {
-						if ( EjbUtils.getBeginningDate(productSerie.getEndingDate()).equals( EjbUtils.getBeginningDate(date))|| (EjbUtils.getBeginningDate(productSerie.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
-							//falta sacar de stock o control metrologico e ingresar a cuarentena
-							Transaction transaction = loadTransactionById(productSerie.getBeginTransactionId().getId());
-							transaction.setId(null);
-							transaction.setCreationDate(new Timestamp(new Date().getTime()));
-							transaction.setObservation("Entra a cuarentena por fecha de expiracion vencida");
-							productSerie.setEndingDate(new Timestamp(new Date().getTime()));
-							productSerie.setObservation("Entra a cuarentena por fecha de expiracion vencida");
-							List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
-							//sacar del stock
-							seriesSave.add(productSerie);
-							saveEgressStock(transaction, seriesSave);
-							
-							//ingresar a cuarentena
-							transaction.setCategory(category);
-							productSerie.setId(null);
-							productSerie.setCategory(category);
-							productSerie.setEndingDate(null);
-							productSerie.setCreationDate(new Timestamp(new Date().getTime()));
-							seriesSave = new ArrayList<ProductSerie>();
-							seriesSave.add(productSerie);
-							saveTransactionStock(transaction, seriesSave);
-							quarantines.add(productSerie);
-						}else{
-							series.add(productSerie);
+						if (productSerie.getExpirationDate() != null) {
+							if (EjbUtils.getBeginningDate(productSerie.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))	|| (EjbUtils.getBeginningDate(productSerie.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
+								// falta sacar de stock o control metrologico e
+								// ingresar a cuarentena
+								Transaction transaction = loadTransactionById(
+										productSerie.getBeginTransactionId().getId());
+								transaction.setId(null);
+								transaction.setCreationDate(new Timestamp(new Date().getTime()));
+								transaction.setObservation("Entra a cuarentena por fecha de expiracion vencida");
+								productSerie.setEndingDate(new Timestamp(new Date().getTime()));
+								productSerie.setObservation("Entra a cuarentena por fecha de expiracion vencida");
+								List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
+								// sacar del stock
+								seriesSave.add(productSerie);
+								saveEgressStock(transaction, seriesSave);
+
+								// ingresar a cuarentena
+								transaction.setCategory(category);
+								productSerie.setId(null);
+								productSerie.setCategory(category);
+								productSerie.setEndingDate(null);
+								productSerie.setCreationDate(new Timestamp(new Date().getTime()));
+								seriesSave = new ArrayList<ProductSerie>();
+								seriesSave.add(productSerie);
+								saveTransactionStock(transaction, seriesSave);
+								quarantines.add(productSerie);
+							} else {
+								series.add(productSerie);
+							}
 						}
 					}
 				} catch (Exception e) {
@@ -752,25 +764,33 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			List<MetrologicalControlHistory> quarantines = new ArrayList<MetrologicalControlHistory>();
 			Enterprise enterprise = utilsEJB.loadEnterprisebyId(Enterprise.TURBINES);
 			Date date = new Date(); 
+			Timestamp today =  new Timestamp(new java.util.Date().getTime());
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(today);
+			calendar.add(Calendar.DAY_OF_YEAR, 5);
+			Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
 			Category category = loadCategorybyId(Category.QUARANTINE);
 			for (MetrologicalControl control : controls) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT m FROM MetrologicalControlHistory m WHERE m.metrologicalControl.id="+ control.getId() + "  b.expirationDate <= curdate()+5 AND m.category.id =" +Category.METEOROLOGICAL_CONTROL);
+				StringBuilder sqlBuilder = new StringBuilder("SELECT m FROM MetrologicalControlHistory m WHERE m.metrologicalControl.id="+ control.getId() + "  m.expirationDate <='"+timestampOldDate+"' AND m.category.id =" +Category.METEOROLOGICAL_CONTROL);
 				Query query = null;
 				try {
 					System.out.println("query:********" + sqlBuilder.toString());
+					query = createQuery(sqlBuilder.toString());
 					List<MetrologicalControlHistory>  histories2 = query.setHint("toplink.refresh", "true").getResultList();
 					for (MetrologicalControlHistory history : histories2) {
-						if (EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))|| (EjbUtils.getBeginningDate(history.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
-							// ingresar control metrologico a quarentena
-							history.setObservation("Entro a cuarentena Fecha de Calibracion Vencida");
-							history.setCategory(category);
-							EJBRequest request = new EJBRequest();
-							request.setParam(history);
-							saveMetrologicalControlHistory(request);
-							quarantines.add(history);
-
-						} else {
-							histories.add(history);
+						if (history.getExpirationDate() != null) {
+							if (EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))|| (EjbUtils.getBeginningDate(history.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
+								// ingresar control metrologico a quarentena
+								history.setObservation("Entro a cuarentena Fecha de Calibracion Vencida");
+								history.setCategory(category);
+								EJBRequest request = new EJBRequest();
+								request.setParam(history);
+								saveMetrologicalControlHistory(request);
+								quarantines.add(history);
+	
+							} else {
+								histories.add(history);
+							}
 						}
 					}
 				} catch (Exception e) {
@@ -792,8 +812,13 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 	
 	public List<Product> getProductByCategoryId(Long categoryId) throws GeneralException{
-		 List<Product> products = new ArrayList<Product>();
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT DISTINCT(p) FROM Product p, ProductSerie s WHERE p.id=s.product.id AND s.endingDate is null AND and b.expirationDate<curdate()+1 AND t.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
+		List<Product> products = new ArrayList<Product>();
+		Timestamp today = new Timestamp(new java.util.Date().getTime());
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(today);
+		calendar.add(Calendar.DAY_OF_YEAR, 5);
+		Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
+		StringBuilder sqlBuilder = new StringBuilder("SELECT DISTINCT s.product FROM ProductSerie s WHERE s.endingDate is null AND s.expirationDate<='"+timestampOldDate+"' AND s.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
 	    Query query = null;
 	    try {
 	        query = createQuery(sqlBuilder.toString());

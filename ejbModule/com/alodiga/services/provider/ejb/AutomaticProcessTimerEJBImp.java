@@ -88,7 +88,7 @@ public class AutomaticProcessTimerEJBImp extends AbstractSPEJB implements Automa
 	        cancelTimers();
 	        setTimeoutInterval();
 	        initialExpiration = Calendar.getInstance();
-	        initialExpiration.add(Calendar.MINUTE, 3);
+	        initialExpiration.add(Calendar.MINUTE, 1);
 	        createTimer();
 	    }
 
