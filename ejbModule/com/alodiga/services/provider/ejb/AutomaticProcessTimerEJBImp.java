@@ -115,7 +115,7 @@ public class AutomaticProcessTimerEJBImp extends AbstractSPEJB implements Automa
 	    private void setTimeoutInterval() throws Exception {
 
 	        initialExpiration = Calendar.getInstance();
-	        initialExpiration.set(Calendar.HOUR, 4);
+	        initialExpiration.set(Calendar.HOUR, 9);
 	        initialExpiration.set(Calendar.MINUTE, 30);
 	        initialExpiration.set(Calendar.SECOND, 0);
 	        initialExpiration.set(Calendar.MILLISECOND, 0);

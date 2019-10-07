@@ -691,13 +691,13 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			Date date = new Date(); 
 			Category category = loadCategorybyId(Category.QUARANTINE);
 			for (Product product : products) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<curdate()+5 AND p.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
+				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND b.expirationDate<=curdate()+5 AND p.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
 				Query query = null;
 				try {
 					System.out.println("query:********" + sqlBuilder.toString());
 					List<ProductSerie>  productSeries = query.setHint("toplink.refresh", "true").getResultList();
 					for (ProductSerie productSerie : productSeries) {
-						if ( EjbUtils.getBeginningDate(productSerie.getEndingDate()).equals( EjbUtils.getBeginningDate(date))){
+						if ( EjbUtils.getBeginningDate(productSerie.getEndingDate()).equals( EjbUtils.getBeginningDate(date))|| (EjbUtils.getBeginningDate(productSerie.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
 							//falta sacar de stock o control metrologico e ingresar a cuarentena
 							Transaction transaction = loadTransactionById(productSerie.getBeginTransactionId().getId());
 							transaction.setId(null);
@@ -754,13 +754,13 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			Date date = new Date(); 
 			Category category = loadCategorybyId(Category.QUARANTINE);
 			for (MetrologicalControl control : controls) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT m FROM MetrologicalControlHistory m WHERE m.metrologicalControl.id="+ control.getId() + "  b.expirationDate<curdate()+5 AND m.category.id =" +Category.METEOROLOGICAL_CONTROL);
+				StringBuilder sqlBuilder = new StringBuilder("SELECT m FROM MetrologicalControlHistory m WHERE m.metrologicalControl.id="+ control.getId() + "  b.expirationDate <= curdate()+5 AND m.category.id =" +Category.METEOROLOGICAL_CONTROL);
 				Query query = null;
 				try {
 					System.out.println("query:********" + sqlBuilder.toString());
 					List<MetrologicalControlHistory>  histories2 = query.setHint("toplink.refresh", "true").getResultList();
 					for (MetrologicalControlHistory history : histories2) {
-						if (EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))) {
+						if (EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))|| (EjbUtils.getBeginningDate(history.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
 							// ingresar control metrologico a quarentena
 							history.setObservation("Entro a cuarentena Fecha de Calibracion Vencida");
 							history.setCategory(category);
