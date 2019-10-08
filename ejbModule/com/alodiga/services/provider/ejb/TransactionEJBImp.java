@@ -704,35 +704,40 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 					System.out.println("query:********" + sqlBuilder.toString());
 					query = createQuery(sqlBuilder.toString());
 					List<ProductSerie>  productSeries = query.setHint("toplink.refresh", "true").getResultList();
-					for (ProductSerie productSerie : productSeries) {
-						if (productSerie.getExpirationDate() != null) {
-							if (EjbUtils.getBeginningDate(productSerie.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))	|| (EjbUtils.getBeginningDate(productSerie.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
+					for (ProductSerie productSerie2 : productSeries) {
+						if (productSerie2.getExpirationDate() != null) {
+							if (EjbUtils.getBeginningDate(productSerie2.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))	|| (EjbUtils.getBeginningDate(productSerie2.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
 								// falta sacar de stock o control metrologico e
 								// ingresar a cuarentena
-								Transaction transaction = loadTransactionById(
-										productSerie.getBeginTransactionId().getId());
+								Transaction transaction2 = loadTransactionById(
+										productSerie2.getBeginTransactionId().getId());
+								Transaction transaction =(Transaction) transaction2.clone();
 								transaction.setId(null);
 								transaction.setCreationDate(new Timestamp(new Date().getTime()));
 								transaction.setObservation("Entra a cuarentena por fecha de expiracion vencida");
-								productSerie.setEndingDate(new Timestamp(new Date().getTime()));
-								productSerie.setObservation("Entra a cuarentena por fecha de expiracion vencida");
+								productSerie2.setEndingDate(new Timestamp(new Date().getTime()));
+								productSerie2.setObservation("Entra a cuarentena por fecha de expiracion vencida");
 								List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
 								// sacar del stock
-								seriesSave.add(productSerie);
+								seriesSave.add(productSerie2);
 								saveEgressStock(transaction, seriesSave);
 
 								// ingresar a cuarentena
 								transaction.setCategory(category);
+								ProductSerie productSerie= (ProductSerie) productSerie2.clone();
+								
 								productSerie.setId(null);
 								productSerie.setCategory(category);
 								productSerie.setEndingDate(null);
 								productSerie.setCreationDate(new Timestamp(new Date().getTime()));
+								productSerie.setObservation(null);
+								productSerie2.setQuarantineReason("Entra a cuarentena por fecha de expiracion vencida");
 								seriesSave = new ArrayList<ProductSerie>();
 								seriesSave.add(productSerie);
 								saveTransactionStock(transaction, seriesSave);
 								quarantines.add(productSerie);
 							} else {
-								series.add(productSerie);
+								series.add(productSerie2);
 							}
 						}
 					}
