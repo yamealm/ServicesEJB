@@ -731,7 +731,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 								productSerie.setEndingDate(null);
 								productSerie.setCreationDate(new Timestamp(new Date().getTime()));
 								productSerie.setObservation(null);
-								productSerie2.setQuarantineReason("Entra a cuarentena por fecha de expiracion vencida");
+								productSerie.setQuarantineReason("Entra a cuarentena por fecha de expiracion vencida");
 								seriesSave = new ArrayList<ProductSerie>();
 								seriesSave.add(productSerie);
 								saveTransactionStock(transaction, seriesSave);
