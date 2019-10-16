@@ -528,22 +528,24 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 	
 	@Override
-	public List<Product> listProducts()	throws GeneralException, NullParameterException, EmptyListException {
-		 List<Product> products = new ArrayList<Product>();
-		
-		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM Product t WHERE t.enabled=1");
-		 
-		    Query query = null;
-		    try {
-		        query = createQuery(sqlBuilder.toString());
-		        products = query.setHint("toplink.refresh", "true").getResultList();
-		    } catch (Exception e) {
+	public List<Product> listProducts(EJBRequest request)	throws GeneralException, NullParameterException, EmptyListException {
+		    List<Product> products = new ArrayList<Product>();
+			Map<String, Object> params = request.getParams();
+
+			if (!params.containsKey(QueryConstants.PARAM_ENABLED)) {
+				throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(),
+						getMethodName(), QueryConstants.PARAM_ENABLED), null);
+			}
+
+			try {
+				products = (List<Product>) getNamedQueryResult(Product.class, QueryConstants.LIST_PRODUCT,request, getMethodName(), logger, "Products");
+			} catch (Exception e) {
 		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
 		    }
-		    if (products.isEmpty()) {
-		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
-		    }
-		    return products;
+			if (products.isEmpty())
+				throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+
+			return products;
 	}
 
 	@Override
