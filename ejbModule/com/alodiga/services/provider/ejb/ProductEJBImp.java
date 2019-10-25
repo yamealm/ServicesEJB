@@ -27,6 +27,7 @@ import com.alodiga.services.provider.commons.genericEJB.EJBRequest;
 import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Category;
+import com.alodiga.services.provider.commons.models.MetrologicalControl;
 import com.alodiga.services.provider.commons.models.MetrologicalControlHistory;
 import com.alodiga.services.provider.commons.models.Product;
 import com.alodiga.services.provider.commons.models.ProductSerie;
@@ -425,4 +426,5 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 
         return products.get(0);
 	}
+	
 }

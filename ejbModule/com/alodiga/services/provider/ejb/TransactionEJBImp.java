@@ -873,4 +873,25 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	      return transactionType;
 	}
 	
+	@Override
+	public MetrologicalControl loadMetrologicalControlByInstrument(String instrumentId)	throws RegisterNotFoundException, NullParameterException, GeneralException {
+		MetrologicalControl metrologicalControl = new MetrologicalControl();
+		if (instrumentId == null) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "instrumentId"),	null);
+		}
+
+		try {
+			Query query = createQuery("SELECT c FROM MetrologicalControl c WHERE c.instrument = ?1");
+			query.setParameter("1", instrumentId);
+			metrologicalControl = (MetrologicalControl) query.getSingleResult();
+		} catch (Exception ex) {
+			throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), ex.getMessage()), null);
+		}
+		if (metrologicalControl == null) {
+			throw new RegisterNotFoundException(logger,	sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		}
+		return metrologicalControl;
+
+	}
+	
 }
