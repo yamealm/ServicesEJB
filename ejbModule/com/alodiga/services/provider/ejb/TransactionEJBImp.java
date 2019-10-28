@@ -573,6 +573,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 						 }
 						 if (!EjbUtils.getBeginningDate(history.getCalibrationDate()).equals(EjbUtils.getBeginningDate(metrologicalControlHistory.getCalibrationDate()))
 							 || !EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(metrologicalControlHistory.getExpirationDate()))) {
+							 metrologicalControlHistory.setCalibrationDateOld(history.getCalibrationDate());
 							 metrologicalControlHistory.setMetrologicalControl(metrologicalControl);
 							 entityManagerWrapper.save(metrologicalControlHistory);							 							 
 						 }else{
@@ -893,5 +894,37 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 		return metrologicalControl;
 
 	}
+	
+	
+	@Override
+	public List<MetrologicalControlHistory> getMetrologicalControlDefeated(int dayEnding) throws GeneralException, NullParameterException, EmptyListException{
+		 List<MetrologicalControlHistory> controlHistories = new ArrayList<MetrologicalControlHistory>();
+		 List<MetrologicalControl> controls = new ArrayList<MetrologicalControl>();
+		 Timestamp today =  new Timestamp(new java.util.Date().getTime());
+		 Calendar calendar = Calendar.getInstance();
+		 calendar.setTime(today);
+		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
+		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
+		 EJBRequest request = new EJBRequest();
+         Map<String, Object> params = new HashMap<String, Object>();
+         request.setParams(params);
+         request.setParam(true);
+
+		 controls = searchMetrologicalControl(request);
+		 for (MetrologicalControl control : controls) {
+			try {
+				MetrologicalControlHistory history = loadLastMetrologicalControlHistoryByMetrologicalControlId(control.getId());
+				 if(history.getExpirationDate().getTime()< timestampOldDate.getTime()) {
+					 controlHistories.add(history) ;
+				 }
+			} catch (RegisterNotFoundException e) {
+			}
+		}
+	    if (controlHistories.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return controlHistories;
+	}
+
 	
 }
