@@ -300,7 +300,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	      }
 		  try {
 			  int currentQuantity =loadQuantityByProductId(transaction.getProduct().getId(), transaction.getCategory().getId());
-			  validateBalanceProduct(currentQuantity, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ADD));
+			  validateBalanceProduct(currentQuantity, transaction.getQuantity(),transaction.getTransactionType().getId().equals(TransactionType.ENTRY));
 			  EntityTransaction trans = entityManager.getTransaction();
 				try {
 					trans.begin();
