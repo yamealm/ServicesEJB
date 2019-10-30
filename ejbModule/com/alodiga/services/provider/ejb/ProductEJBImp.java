@@ -149,11 +149,10 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
 	    Map<String, Object> params = request.getParams();
 	
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.creationDate BETWEEN ?1 AND ?2");
-	    if (!params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) || !params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
-	        throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "beginningDate & endingDate"), null);
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.category.id=").append(params.get(QueryConstants.PARAM_CATEGORY_ID));
+	    if (params.containsKey(QueryConstants.PARAM_BEGINNING_DATE) && params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+	    	 sqlBuilder.append(" AND p.creationDate BETWEEN ?1 AND ?2");
 	    }
-	
 	    if (params.containsKey(QueryConstants.PARAM_PROVIDER_ID)) {
 	        sqlBuilder.append(" AND p.provider.id=").append(params.get(QueryConstants.PARAM_PROVIDER_ID));
 	    }
@@ -167,10 +166,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	        sqlBuilder.append(" AND p.condition.id=").append(params.get(QueryConstants.PARAM_CONDITION_ID));
 	    }
 	    if (params.containsKey(QueryConstants.PARAM_WORK_ORDER)) {
-	        sqlBuilder.append(" AND p.orderWord=").append(params.get(QueryConstants.PARAM_WORK_ORDER));
-	    }
-	    if (params.containsKey(QueryConstants.PARAM_CATEGORY_ID)) {
-	    	  sqlBuilder.append(" AND p.category.id=").append(params.get(QueryConstants.PARAM_CATEGORY_ID));
+	        sqlBuilder.append(" AND p.orderWord='").append(params.get(QueryConstants.PARAM_WORK_ORDER)).append("'");
 	    }
 	    if (params.containsKey(QueryConstants.PARAM_TRANSACTION_TYPE_ID)) { //pendiente
 	    	Long transactionType = (Long) params.get(QueryConstants.PARAM_TRANSACTION_TYPE_ID);
@@ -183,8 +179,10 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
 	        query = createQuery(sqlBuilder.toString());
-	        query.setParameter("1", EjbUtils.getBeginningDate((Date) params.get(QueryConstants.PARAM_BEGINNING_DATE)));
-	        query.setParameter("2", EjbUtils.getEndingDate((Date) params.get(QueryConstants.PARAM_ENDING_DATE)));
+			if (params.containsKey(QueryConstants.PARAM_BEGINNING_DATE)	&& params.containsKey(QueryConstants.PARAM_ENDING_DATE)) {
+				query.setParameter("1",	EjbUtils.getBeginningDate((Date) params.get(QueryConstants.PARAM_BEGINNING_DATE)));
+				query.setParameter("2", EjbUtils.getEndingDate((Date) params.get(QueryConstants.PARAM_ENDING_DATE)));
+			}
 	        if (request.getLimit() != null && request.getLimit() > 0) {
 	            query.setMaxResults(request.getLimit());
 	        }

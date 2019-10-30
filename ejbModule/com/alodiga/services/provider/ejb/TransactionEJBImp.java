@@ -528,6 +528,30 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	}
 	
 	@Override
+	public List<ProductSerie> searchProductSerieByCategoryIdReport(Long categoryId, Long transactionType) throws GeneralException, NullParameterException, EmptyListException{
+		    List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
+		    StringBuilder sqlBuilder = new StringBuilder("SELECT t FROM ProductSerie t WHERE t.category.id =?1" );
+		    if (transactionType!=null) {
+		    	if (transactionType.equals(TransactionType.ENTRY)) 
+		    		sqlBuilder.append(" AND t.endingDate is NULL");
+		    	else
+		    		sqlBuilder.append(" AND t.endingDate is not NULL");
+		    }
+		    try {
+		         Query query = entityManager.createQuery(sqlBuilder.toString());
+		         query.setParameter("1", categoryId);
+		        productSeries = query.setHint("toplink.refresh", "true").getResultList();
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+		    }
+		    if (productSeries.isEmpty()) {
+		        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+		    }
+		    return productSeries;
+	}
+	
+	@Override
 	public List<Product> listProducts(EJBRequest request)	throws GeneralException, NullParameterException, EmptyListException {
 		    List<Product> products = new ArrayList<Product>();
 			Map<String, Object> params = request.getParams();
