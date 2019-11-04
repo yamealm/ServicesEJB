@@ -19,6 +19,7 @@ import javax.persistence.Query;
 
 import org.apache.log4j.Logger;
 
+import com.alodiga.services.provider.commons.ejbs.ProductEJBLocal;
 import com.alodiga.services.provider.commons.ejbs.TransactionEJB;
 import com.alodiga.services.provider.commons.ejbs.TransactionEJBLocal;
 import com.alodiga.services.provider.commons.ejbs.UtilsEJBLocal;
@@ -53,6 +54,8 @@ import com.alodiga.services.provider.commons.utils.ServiceMailDispatcher;
 public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, TransactionEJBLocal {
 	@EJB
 	private UtilsEJBLocal  utilsEJB;
+	@EJB
+	private ProductEJBLocal  productEJB;
 
     private static final Logger logger = Logger.getLogger(TransactionEJBImp.class);
 
@@ -725,48 +728,62 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
 			Category category = loadCategorybyId(Category.QUARANTINE);
 			for (Product product : products) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.product.id="	+ product.getId() + " AND p.expirationDate<='"+timestampOldDate+"' AND p.category.id in (" + Category.STOCK+ ","+Category.METEOROLOGICAL_CONTROL+")");
-				Query query = null;
+				List<ProductSerie> serie2 = searchProductSerieByProductId(product.getId(), Category.STOCK);
 				try {
-					System.out.println("query:********" + sqlBuilder.toString());
-					query = createQuery(sqlBuilder.toString());
-					List<ProductSerie>  productSeries = query.setHint("toplink.refresh", "true").getResultList();
-					for (ProductSerie productSerie2 : productSeries) {
-						if (productSerie2.getExpirationDate() != null) {
-							if (EjbUtils.getBeginningDate(productSerie2.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))	|| (EjbUtils.getBeginningDate(productSerie2.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
-								// falta sacar de stock o control metrologico e
-								// ingresar a cuarentena
-								Transaction transaction2 = loadTransactionById(
-										productSerie2.getBeginTransactionId().getId());
-								Transaction transaction =(Transaction) transaction2.clone();
-								transaction.setId(null);
-								transaction.setCreationDate(new Timestamp(new Date().getTime()));
-								transaction.setObservation("Entra a cuarentena por fecha de expiracion vencida");
-								productSerie2.setEndingDate(new Timestamp(new Date().getTime()));
-								productSerie2.setObservation("Entra a cuarentena por fecha de expiracion vencida");
-								List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
-								// sacar del stock
-								seriesSave.add(productSerie2);
-								saveEgressStock(transaction, seriesSave);
-
-								// ingresar a cuarentena
-								transaction.setCategory(category);
-								ProductSerie productSerie= (ProductSerie) productSerie2.clone();
-								
-								productSerie.setId(null);
-								productSerie.setCategory(category);
-								productSerie.setEndingDate(null);
-								productSerie.setCreationDate(new Timestamp(new Date().getTime()));
-								productSerie.setObservation(null);
-								productSerie.setQuarantineReason("Entra a cuarentena por fecha de expiracion vencida");
-								seriesSave = new ArrayList<ProductSerie>();
-								seriesSave.add(productSerie);
-								saveTransactionStock(transaction, seriesSave);
-								quarantines.add(productSerie);
-							} else {
-								series.add(productSerie2);
+					for (ProductSerie productSerie2: serie2 ) {
+							if (productSerie2.getExpirationDate().before(EjbUtils.getBeginningDate(timestampOldDate)) && productSerie2.getCategory().getId().equals(Category.STOCK)) {
+								if (EjbUtils.getBeginningDate(productSerie2.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))	|| (EjbUtils.getBeginningDate(productSerie2.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
+									// falta sacar de stock o control metrologico e
+									// ingresar a cuarentena
+									Transaction transaction2 = loadTransactionById(
+											productSerie2.getBeginTransactionId().getId());
+									Transaction transaction =(Transaction) transaction2.clone();
+									transaction.setId(null);
+									transaction.setCreationDate(new Timestamp(new Date().getTime()));
+									transaction.setObservation("Fecha de expiracion vencida");
+									productSerie2.setEndingDate(new Timestamp(new Date().getTime()));
+									productSerie2.setObservation("Fecha de expiracion vencida");
+									List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
+									// sacar del stock
+									seriesSave.add(productSerie2);
+									saveEgressStock(transaction, seriesSave);
+	
+									// ingresar a cuarentena
+									transaction.setCategory(category);
+									ProductSerie productSerie= (ProductSerie) productSerie2.clone();
+									Product productQuatantine = null;
+									EJBRequest request = new EJBRequest();
+									Map params = new HashMap<String, Object>();
+						            params.put(QueryConstants.PARAM_PART_NUMBER, product.getPartNumber());
+						            params.put(QueryConstants.PARAM_CATEGORY_ID, Category.QUARANTINE);
+						            request.setParams(params);
+										try {
+											productQuatantine = productEJB.loadProductByPartNumber(request);
+										} catch (RegisterNotFoundException ex) {
+											productQuatantine = (Product) product.clone();
+											productQuatantine.setId(null);
+											productQuatantine.setCategory(category);
+											request = new EJBRequest();
+											request.setParam(productQuatantine);
+											productQuatantine = productEJB.saveProduct(request);
+										}
+									productSerie.setId(null);
+									productSerie.setCategory(category);
+									productSerie.setBeginTransactionId(transaction);
+									productSerie.setEndingTransactionId(null);
+									productSerie.setEndingDate(null);
+									productSerie.setCreationDate(new Timestamp(new Date().getTime()));
+									productSerie.setObservation(null);
+									productSerie.setProduct(productQuatantine);
+									productSerie.setQuarantineReason("Fecha de expiracion vencida");
+									seriesSave = new ArrayList<ProductSerie>();
+									seriesSave.add(productSerie);
+									saveTransactionStock(transaction, seriesSave);
+									quarantines.add(productSerie);
+								} else {
+									series.add(productSerie2);
+								}
 							}
-						}
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -802,15 +819,10 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			calendar.add(Calendar.DAY_OF_YEAR, 5);
 			Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
 			Category category = loadCategorybyId(Category.QUARANTINE);
-			for (MetrologicalControl control : controls) {
-				StringBuilder sqlBuilder = new StringBuilder("SELECT m FROM MetrologicalControlHistory m WHERE m.metrologicalControl.id="+ control.getId() + "  m.expirationDate <='"+timestampOldDate+"' AND m.category.id =" +Category.METEOROLOGICAL_CONTROL);
-				Query query = null;
-				try {
-					System.out.println("query:********" + sqlBuilder.toString());
-					query = createQuery(sqlBuilder.toString());
-					List<MetrologicalControlHistory>  histories2 = query.setHint("toplink.refresh", "true").getResultList();
-					for (MetrologicalControlHistory history : histories2) {
-						if (history.getExpirationDate() != null) {
+			 for (MetrologicalControl control : controls) {
+					try {
+						MetrologicalControlHistory history = loadLastMetrologicalControlHistoryByMetrologicalControlId(control.getId());
+						if (history.getExpirationDate().before(EjbUtils.getBeginningDate(timestampOldDate))) {
 							if (EjbUtils.getBeginningDate(history.getExpirationDate()).equals(EjbUtils.getBeginningDate(date))|| (EjbUtils.getBeginningDate(history.getExpirationDate()).before(EjbUtils.getBeginningDate(date)))) {
 								// ingresar control metrologico a quarentena
 								history.setObservation("Entro a cuarentena Fecha de Calibracion Vencida");
@@ -824,12 +836,9 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 								histories.add(history);
 							}
 						}
+					} catch (RegisterNotFoundException e) {
 					}
-				} catch (Exception e) {
-					e.printStackTrace();
-					throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION,this.getClass(), getMethodName(), e.getMessage()), null);
 				}
-			}
 			if (!quarantines.isEmpty()) {
 				ServiceMailDispatcher.sendQuarantineDataMailControl(enterprise, quarantines, "Cuarentena");
 			}
@@ -950,5 +959,47 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	    return controlHistories;
 	}
 
+	@Override
+	public MetrologicalControl loadControlByInstrument(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
+		List<MetrologicalControl> products = new ArrayList<MetrologicalControl>();
+		Map<String, Object> params = request.getParams();
+
+		if (!params.containsKey(QueryConstants.PARAM_INSTRUMENT)) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(),
+					getMethodName(), QueryConstants.PARAM_INSTRUMENT), null);
+		}
+
+		try {
+			products = (List<MetrologicalControl>) getNamedQueryResult(MetrologicalControl.class, QueryConstants.LOAD_CONTROL_BY_INSTRUMENT,request, getMethodName(), logger, "MetrologicalControl");
+		} catch (EmptyListException e) {
+			 throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName(), "MetrologicalControl"), null);
+        }
+
+        return products.get(0);
+	}
+	
+	@Override
+	public ProductSerie loadLastProductSerieByProductId(Long productId)	throws GeneralException, RegisterNotFoundException, NullParameterException {
+		 if (productId == null) {
+	            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "accountId"), null);
+	     }
+		 ProductSerie productSerie = null;
+	     try {
+	          Timestamp maxDate = (Timestamp) entityManager.createQuery("SELECT MAX(b.creationDate) FROM ProductSerie b WHERE b.product.id = " + productId).getSingleResult();
+	          Query query = entityManager.createQuery("SELECT b FROM ProductSerie b WHERE b.creationDate = :maxDate AND b.product.id = " + productId);
+	          query.setParameter("maxDate", maxDate);
+              List result = (List) query.setHint("toplink.refresh", "true").getResultList();
+
+	          if (!result.isEmpty()) {
+	        	  productSerie = ((ProductSerie) result.get(0));
+	          }
+	     } catch (NoResultException ex) {
+	           throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
+	     } catch (Exception e) {
+	           e.printStackTrace();
+	           throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
+	     }
+	     return productSerie;
+	}
 	
 }

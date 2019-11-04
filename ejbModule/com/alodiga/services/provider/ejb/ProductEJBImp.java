@@ -202,7 +202,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	public List<ProductSerie> getProductDefeated() throws GeneralException, NullParameterException, EmptyListException{
 		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
 		 Timestamp today =  new Timestamp(new java.util.Date().getTime());
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate <=CURRENT_DATE");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate <=CURRENT_DATE AND p.endingTransactionId is null AND p.endingDate is null");
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
@@ -227,7 +227,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 calendar.setTime(today);
 		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
 		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate BETWEEN '"+ today+"' AND '"+timestampOldDate+"'");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.endingTransactionId is null AND p.expirationDate BETWEEN '"+ today+"' AND '"+timestampOldDate+"'");
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
@@ -415,6 +415,10 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(),
 					getMethodName(), QueryConstants.PARAM_PART_NUMBER), null);
 		}
+		if (!params.containsKey(QueryConstants.PARAM_CATEGORY_ID)) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(),
+					getMethodName(), QueryConstants.PARAM_CATEGORY_ID), null);
+		}
 
 		try {
 			products = (List<Product>) getNamedQueryResult(Product.class, QueryConstants.LOAD_PRODUCT_BY_PART_NUMBER,request, getMethodName(), logger, "Product");
@@ -424,5 +428,6 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 
         return products.get(0);
 	}
+	
 	
 }
