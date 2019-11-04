@@ -345,36 +345,20 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	 public Transaction saveEgressStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 			
 		if (transaction == null) {
-			throw new NullParameterException(logger,
-					sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
+			throw new NullParameterException(logger,sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
 		}
-		EntityTransaction trans = entityManager.getTransaction();
 		try {
-			trans.begin();
-			transaction =(Transaction) entityManagerWrapper.save(transaction);
+			EJBRequest request = new EJBRequest();
+			request.setParam(transaction);
+			transaction = saveTransaction(request);
 			for (ProductSerie productSerie : productSeries) {
-				if (productSerie.getId() != null) {
-					productSerie.setEndingTransactionId(transaction);
-					entityManagerWrapper.update(productSerie);
-				}else {
-					entityManagerWrapper.save(productSerie);
-				}
-
+				productSerie.setEndingTransactionId(transaction);
+				request = new EJBRequest();
+				request.setParam(productSerie);
+				saveProductSerie(request);
 			}
-			trans.commit();
 		} catch (Exception e) {
-			e.printStackTrace();
-			try {
-				if (trans.isActive()) {
-					trans.rollback();
-				}
-			} catch (IllegalStateException e1) {
-				throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
-			} catch (SecurityException e1) {
-				throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
-			}
 			throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
-
 		}
 		return transaction;
 	 
