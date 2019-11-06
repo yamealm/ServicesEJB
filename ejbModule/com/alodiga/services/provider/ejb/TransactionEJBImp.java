@@ -39,7 +39,6 @@ import com.alodiga.services.provider.commons.models.Enterprise;
 import com.alodiga.services.provider.commons.models.MetrologicalControl;
 import com.alodiga.services.provider.commons.models.MetrologicalControlHistory;
 import com.alodiga.services.provider.commons.models.Product;
-import com.alodiga.services.provider.commons.models.ProductHistory;
 import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Transaction;
 import com.alodiga.services.provider.commons.models.TransactionType;
@@ -222,30 +221,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
         return transaction;
 	}
 
-	@Override
-	public ProductHistory loadLastProductHistoryByProductId(Long productId)	throws GeneralException, RegisterNotFoundException, NullParameterException {
-		 if (productId == null) {
-	            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "accountId"), null);
-	     }
-		 ProductHistory productHistory = null;
-	     try {
-	          Timestamp maxDate = (Timestamp) entityManager.createQuery("SELECT MAX(b.creationDate) FROM ProductHistory b WHERE b.product.id = " + productId).getSingleResult();
-	          Query query = entityManager.createQuery("SELECT b FROM ProductHistory b WHERE b.creationDate = :maxDate AND b.product.id = " + productId);
-	          query.setParameter("maxDate", maxDate);
-              List result = (List) query.setHint("toplink.refresh", "true").getResultList();
-
-	          if (!result.isEmpty()) {
-	        	  productHistory = ((ProductHistory) result.get(0));
-	          }
-	     } catch (NoResultException ex) {
-	           throw new RegisterNotFoundException(logger, sysError.format(EjbConstants.ERR_REGISTER_NOT_FOUND_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
-	     } catch (Exception e) {
-	           e.printStackTrace();
-	           throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "ProductHistory"), null);
-	     }
-	     return productHistory;
-	}
-	
+		
 	@Override
 	public Integer loadQuantityByProductId(Long productId, Long categoryId)	throws GeneralException, NullParameterException {
 		 if (productId == null) {
@@ -265,28 +241,16 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	     return quantityTotal.intValue();
 	}
 
-	@Override
-	public ProductHistory saveProductHistory(EJBRequest request) throws GeneralException, NullParameterException {
-		return (ProductHistory) saveEntity(request, logger, getMethodName());
-	}
-	
+
 	@Override
 	public MetrologicalControlHistory saveMetrologicalControlHistory(EJBRequest request) throws GeneralException, NullParameterException {
 		return (MetrologicalControlHistory) saveEntity(request, logger, getMethodName());
 	}
 	
-	
 	private ProductSerie saveProductSerie(EJBRequest request) throws GeneralException, NullParameterException {
 		return (ProductSerie) saveEntity(request, logger, getMethodName());
 	}
 
-	@Override
-	public boolean validateBalance(ProductHistory currentProductHistory, float amount, boolean isAdd) throws NegativeBalanceException {
-	   if (!isAdd && (currentProductHistory.getCurrentQuantity() - amount) < 0) {
-	            throw new NegativeBalanceException(logger, sysError.format(EjbConstants.ERR_MIN_AMOUNT_BALANCE, this.getClass(), getMethodName(), "param"), null);
-	   }
-	   return true;
-	}
 	
 	@Override
 	public boolean validateBalanceProduct(Integer currentQuantity, float amount, boolean isAdd) throws NegativeBalanceException {
@@ -296,6 +260,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	   return true;
 	}
 
+	@Override
 	 public Transaction saveTransactionStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 		
 		  if (transaction == null) {
@@ -341,7 +306,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	 
 	 }
 	 
-	 @Override
+	@Override
 	 public Transaction saveEgressStock(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 			
 		if (transaction == null) {
@@ -364,30 +329,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	 
 	 }
 	 
-	 private ProductHistory createBalanceHistory(Transaction transaction, int transferAmount, boolean isAdd) throws GeneralException, NullParameterException, NegativeBalanceException, RegisterNotFoundException {
-		    ProductHistory currentProductHistory = loadLastProductHistoryByProductId(transaction.getProduct().getId());
-	        validateBalance(currentProductHistory, transferAmount, isAdd);
-	        int currentQuantity = currentProductHistory!=null?currentProductHistory.getCurrentQuantity():0;
-	        ProductHistory productHistory = new ProductHistory();
-	        productHistory.setProduct(transaction.getProduct());
-	        productHistory.setCreationDate(new Timestamp(new Date().getTime()));
-	        productHistory.setOldQuantity(currentQuantity);
-	        productHistory.setOldAmount(currentProductHistory!=null?currentProductHistory.getCurrentAmount():0f);
-	        productHistory.setCurrentAmount(transaction.getAmount());
-	        int newCurrentQuantity = 0;
-	        if(!isAdd)
-	        	newCurrentQuantity = currentQuantity - transferAmount; //RESTO DEL MONTO ACTUAL (EL QUE REALIZA LA TRANSFERENCIA)
-	        else
-	        	newCurrentQuantity = currentQuantity + transferAmount;//SUMO AL MONTO ACTUAL (EL DESTINO)
-	        
-	        if (newCurrentQuantity < 0) {
-	            throw new NegativeBalanceException("Current amount can not be negative");
-	        }
-	        productHistory.setCurrentQuantity(newCurrentQuantity);
-	        return productHistory;
-	    }
-
-	 @Override
+		 @Override
 	 public Transaction modificarStock(Transaction transaction , ProductSerie productSerie) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
 			
 		  if (transaction == null) {

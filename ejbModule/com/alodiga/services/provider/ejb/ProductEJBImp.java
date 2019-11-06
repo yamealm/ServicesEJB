@@ -171,6 +171,9 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	    if (params.containsKey(QueryConstants.PARAM_WORK_ORDER)) {
 	        sqlBuilder.append(" AND p.orderWord='").append(params.get(QueryConstants.PARAM_WORK_ORDER)).append("'");
 	    }
+	    if (params.containsKey(QueryConstants.PARAM_PART_NUMBER)) {
+	        sqlBuilder.append(" AND p.product.partNumber='").append(params.get(QueryConstants.PARAM_PART_NUMBER)).append("'");
+	    }
 	    if (params.containsKey(QueryConstants.PARAM_TRANSACTION_TYPE_ID)) { //pendiente
 	    	Long transactionType = (Long) params.get(QueryConstants.PARAM_TRANSACTION_TYPE_ID);
 			if (transactionType.equals(TransactionType.ENTRY))
@@ -209,11 +212,12 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	public List<ProductSerie> getProductDefeated() throws GeneralException, NullParameterException, EmptyListException{
 		 List<ProductSerie> productSeries = new ArrayList<ProductSerie>();
 		 Timestamp today =  new Timestamp(new java.util.Date().getTime());
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate <=CURRENT_DATE AND p.endingTransactionId is null AND p.endingDate is null");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.expirationDate <=?1 AND p.endingTransactionId is null AND p.endingDate is null AND p.category.id="+ Category.STOCK);
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
 	        query = createQuery(sqlBuilder.toString());
+	        query.setParameter("1", EjbUtils.getEndingDate((Date) today));
 	        productSeries = query.setHint("toplink.refresh", "true").getResultList();
 	    } catch (Exception e) {
 	        e.printStackTrace();
@@ -234,7 +238,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 calendar.setTime(today);
 		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
 		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.endingTransactionId is null AND p.expirationDate BETWEEN '"+ today+"' AND '"+timestampOldDate+"'");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.endingTransactionId is null AND p.expirationDate BETWEEN '"+ today+"' AND '"+timestampOldDate+"' AND p.category.id="+Category.STOCK);
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
@@ -260,7 +264,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 calendar.setTime(today);
 		 calendar.add(Calendar.DAY_OF_MONTH, dayEnding);
 		 Timestamp timestampOldDate = new Timestamp(calendar.getTimeInMillis());
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.cure >= '"+ timestampOldDate+"'");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT p FROM ProductSerie p WHERE p.cure between '" + today +"' and '" + timestampOldDate + "'");
 	    Query query = null;
 	    try {
 	        System.out.println("query:********"+sqlBuilder.toString());
@@ -281,7 +285,7 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 		 List<MetrologicalControlHistory> metrologicalControls = new ArrayList<MetrologicalControlHistory>();
 	    Map<String, Object> params = request.getParams();
 	  //revisar query para que devuelva el ultimo
-	    StringBuilder sqlBuilder = new StringBuilder("SELECT h FROM MetrologicalControlHistory h, MetrologicalControl m WHERE h.metrologicalControl.id=m.id AND h.id in (SELECT MAX(p.id) FROM MetrologicalControl p GROUP BY metrologicalControlId)");
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT h FROM MetrologicalControlHistory h, MetrologicalControl m WHERE h.metrologicalControl.id=m.id AND h.id in (SELECT MAX(p.id) FROM MetrologicalControlHistory p GROUP BY p.metrologicalControl.id)");
 	
 	    if (params.containsKey(QueryConstants.PARAM_BRAUND_ID)) {
 	        sqlBuilder.append(" AND h.metrologicalControl.braund.id=").append(params.get(QueryConstants.PARAM_BRAUND_ID));
@@ -324,6 +328,36 @@ public class ProductEJBImp extends AbstractSPEJB implements ProductEJB, ProductE
 	        	query.setParameter("3", EjbUtils.getBeginningDate((Date) params.get(QueryConstants.PARAM_BEGINNING_DATE_EXIT)));
 	        	query.setParameter("4", EjbUtils.getEndingDate((Date) params.get(QueryConstants.PARAM_ENDING_DATE_EXIT)));
 	        }
+	        
+	        if (request.getLimit() != null && request.getLimit() > 0) {
+	            query.setMaxResults(request.getLimit());
+	        }
+	        metrologicalControls = query.setHint("toplink.refresh", "true").getResultList();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), e.getMessage()), null);
+	    }
+	    if (metrologicalControls.isEmpty()) {
+	        throw new EmptyListException(logger, sysError.format(EjbConstants.ERR_EMPTY_LIST_EXCEPTION, this.getClass(), getMethodName()), null);
+	    }
+	    return metrologicalControls;
+	}
+	
+	@Override
+	public List<MetrologicalControlHistory> loadMetrologicalControlHistory(EJBRequest request) throws GeneralException, NullParameterException, EmptyListException{
+		 List<MetrologicalControlHistory> metrologicalControls = new ArrayList<MetrologicalControlHistory>();
+	    Map<String, Object> params = request.getParams();
+	  //revisar query para que devuelva el ultimo
+	    StringBuilder sqlBuilder = new StringBuilder("SELECT h FROM MetrologicalControlHistory h, MetrologicalControl m WHERE h.metrologicalControl.id=m.id");
+	
+	    if (params.containsKey(QueryConstants.PARAM_CONTROL)) {
+	        sqlBuilder.append(" AND h.metrologicalControl.id=").append(params.get(QueryConstants.PARAM_CONTROL));
+	    }
+	    sqlBuilder.append(" ORDER BY h.id DESC");
+	    Query query = null;
+	    try {
+	    	System.out.println("query:********"+sqlBuilder.toString());
+	    	query = createQuery(sqlBuilder.toString());
 	        
 	        if (request.getLimit() != null && request.getLimit() > 0) {
 	            query.setMaxResults(request.getLimit());

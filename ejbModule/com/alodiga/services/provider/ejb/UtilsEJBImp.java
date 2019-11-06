@@ -30,17 +30,14 @@ import com.alodiga.services.provider.commons.models.Braund;
 import com.alodiga.services.provider.commons.models.ControlType;
 import com.alodiga.services.provider.commons.models.EnterCalibration;
 import com.alodiga.services.provider.commons.models.Model;
-import com.alodiga.services.provider.commons.models.City;
 import com.alodiga.services.provider.commons.models.Country;
 import com.alodiga.services.provider.commons.models.CountryHasProvider;
 import com.alodiga.services.provider.commons.models.CountryTranslation;
-import com.alodiga.services.provider.commons.models.County;
 import com.alodiga.services.provider.commons.models.Currency;
 import com.alodiga.services.provider.commons.models.Enterprise;
 import com.alodiga.services.provider.commons.models.Language;
 import com.alodiga.services.provider.commons.models.Provider;
 import com.alodiga.services.provider.commons.models.QuarantineStatus;
-import com.alodiga.services.provider.commons.models.State;
 import com.alodiga.services.provider.commons.models.TinType;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.Mail;
@@ -54,38 +51,6 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
 
     private static final Logger logger = Logger.getLogger(UtilsEJBImp.class);
 
-    public List<City> getCitiesByCounty(EJBRequest request) throws EmptyListException, GeneralException, NullParameterException {
-        List<City> cities = null;
-        Map<String, Object> params = request.getParams();
-        if (!params.containsKey(QueryConstants.PARAM_COUNTY_ID)) {
-            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), QueryConstants.PARAM_COUNTY_ID), null);
-        }
-        cities = (List<City>) getNamedQueryResult(UtilsEJB.class, QueryConstants.CITIES_BY_COUNTY, request, getMethodName(), logger, "cities");
-        return cities;
-    }
-
-    public List<City> getCitiesByState(EJBRequest request) throws EmptyListException, GeneralException, NullParameterException {
-        List<City> cities = null;
-        Map<String, Object> params = request.getParams();
-        if (!params.containsKey(QueryConstants.PARAM_STATE_ID)) {
-            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "id"), null);
-        }
-
-        cities = (List<City>) getNamedQueryResult(UtilsEJB.class, QueryConstants.CITIES_BY_STATE, request, getMethodName(), logger, "cities");
-
-        return cities;
-    }
-
-    public List<County> getCountiesByState(EJBRequest request) throws EmptyListException, GeneralException, NullParameterException {
-        List<County> counties = null;
-        Map<String, Object> params = request.getParams();
-
-        if (!params.containsKey(QueryConstants.PARAM_STATE_ID)) {
-            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), QueryConstants.PARAM_STATE_ID), null);
-        }
-        counties = (List<County>) getNamedQueryResult(UtilsEJB.class, QueryConstants.COUNTIES_BY_STATE, request, getMethodName(), logger, "counties");
-        return counties;
-    }
 
     public List<Country> getCountries(EJBRequest request) throws EmptyListException, GeneralException, NullParameterException {
         List<Country> countries = (List<Country>) listEntities(Country.class, request, logger, getMethodName());
@@ -122,30 +87,9 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
         return languages;
     }
 
-
-    public List<State> getStateByCountry(EJBRequest request) throws EmptyListException, GeneralException, NullParameterException {
-        List<State> states = null;
-        Map<String, Object> params = request.getParams();
-        if (!params.containsKey(QueryConstants.PARAM_COUNTRY_ID)) {
-            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), QueryConstants.PARAM_COUNTRY_ID), null);
-        }
-        states = (List<State>) getNamedQueryResult(UtilsEJB.class, QueryConstants.STATES_BY_COUNTRY, request, getMethodName(), logger, "states");
-        return states;
-    }
-
-    public City loadCity(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
-        City city = (City) loadEntity(City.class, request, logger, getMethodName());
-        return city;
-    }
-
     public Country loadCountry(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
         Country country = (Country) loadEntity(Country.class, request, logger, getMethodName());
         return country;
-    }
-
-    public County loadCounty(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
-        County county = (County) loadEntity(County.class, request, logger, getMethodName());
-        return county;
     }
 
     public Enterprise loadEnterprise(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
@@ -156,12 +100,6 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
     public Language loadLanguage(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
         Language language = (Language) loadEntity(Language.class, request, logger, getMethodName());
         return language;
-    }
-
-
-    public State loadState(EJBRequest request) throws RegisterNotFoundException, NullParameterException, GeneralException {
-        State state = (State) loadEntity(State.class, request, logger, getMethodName());
-        return state;
     }
 
     public List<TinType> getTinTypes() throws EmptyListException, GeneralException, NullParameterException {

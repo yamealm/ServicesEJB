@@ -17,7 +17,6 @@ import com.alodiga.services.provider.commons.genericEJB.AbstractSPEJB;
 import com.alodiga.services.provider.commons.genericEJB.SPContextInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.genericEJB.EJBRequest;
-import com.alodiga.services.provider.commons.models.Address;
 import com.alodiga.services.provider.commons.models.Customer;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
@@ -124,14 +123,6 @@ public class CustomerEJBImp extends AbstractSPEJB implements CustomerEJB, Custom
         }
         return (Customer) saveEntity(customer);
     }
-
-     public Address saveAddress(Address address) throws NullParameterException, GeneralException {
-        if (address == null) {
-            throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "address"), null);
-        }
-        return (Address) saveEntity(address);
-    }
-
 
     public List<Customer> searchCustomers(String login, String fullName, String email) throws EmptyListException, NullParameterException, GeneralException {
         List<Customer> customers = new ArrayList<Customer>();
