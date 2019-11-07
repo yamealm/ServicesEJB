@@ -317,7 +317,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			request.setParam(transaction);
 			transaction = saveTransaction(request);
 			for (ProductSerie productSerie : productSeries) {
-				productSerie.setEndingTransactionId(transaction);
+//				productSerie.setEndingTransactionId(transaction);
 				request = new EJBRequest();
 				request.setParam(productSerie);
 				saveProductSerie(request);
