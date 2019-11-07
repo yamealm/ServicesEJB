@@ -36,6 +36,7 @@ import com.alodiga.services.provider.commons.genericEJB.SPLoggerInterceptor;
 import com.alodiga.services.provider.commons.models.Category;
 import com.alodiga.services.provider.commons.models.Condicion;
 import com.alodiga.services.provider.commons.models.Enterprise;
+import com.alodiga.services.provider.commons.models.EnterpriseHasEmail;
 import com.alodiga.services.provider.commons.models.MetrologicalControl;
 import com.alodiga.services.provider.commons.models.MetrologicalControlHistory;
 import com.alodiga.services.provider.commons.models.Product;
@@ -646,6 +647,11 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			List<ProductSerie> series = new ArrayList<ProductSerie>();
 			List<ProductSerie> quarantines = new ArrayList<ProductSerie>();
 			Enterprise enterprise = utilsEJB.loadEnterprisebyId(Enterprise.TURBINES);
+			List<EnterpriseHasEmail> emails = null ;
+			try {
+		        	emails = utilsEJB.getEnterpriseHasEmails();
+		    } catch (Exception ex) {
+		    }
 			Date date = new Date(); 
 			Timestamp today =  new Timestamp(new java.util.Date().getTime());
 			Calendar calendar = Calendar.getInstance();
@@ -718,11 +724,11 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 				}
 			}
 			if (!quarantines.isEmpty()) {
-				ServiceMailDispatcher.sendQuarantineDataMail(enterprise, quarantines, "Cuarentena");
+				ServiceMailDispatcher.sendQuarantineDataMail(enterprise,emails, quarantines, "Cuarentena");
 				// sendNotificationMailQuarine(productSeries);
 			}
 			if (!series.isEmpty()) {
-				ServiceMailDispatcher.sendPendingDataMail(enterprise, series, "Productos a vencer");
+				ServiceMailDispatcher.sendPendingDataMail(enterprise, emails,series, "Productos a vencer");
 				// sendNotificationMailStock(productSeries);
 			}
 		} catch (Exception e) {
@@ -739,6 +745,11 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 			List<MetrologicalControlHistory> histories = new ArrayList<MetrologicalControlHistory>();
 			List<MetrologicalControlHistory> quarantines = new ArrayList<MetrologicalControlHistory>();
 			Enterprise enterprise = utilsEJB.loadEnterprisebyId(Enterprise.TURBINES);
+			List<EnterpriseHasEmail> emails = null ;
+			try {
+		        	emails = utilsEJB.getEnterpriseHasEmails();
+		    } catch (Exception ex) {
+		    }
 			Date date = new Date(); 
 			Timestamp today =  new Timestamp(new java.util.Date().getTime());
 			Calendar calendar = Calendar.getInstance();
@@ -767,10 +778,10 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 					}
 				}
 			if (!quarantines.isEmpty()) {
-				ServiceMailDispatcher.sendQuarantineDataMailControl(enterprise, quarantines, "Cuarentena");
+				ServiceMailDispatcher.sendQuarantineDataMailControl(enterprise,emails, quarantines, "Cuarentena");
 			}
 			if (!histories.isEmpty()) {
-				ServiceMailDispatcher.sendPendingDataMailControl(enterprise, histories, "Productos a vencer");
+				ServiceMailDispatcher.sendPendingDataMailControl(enterprise,emails, histories, "Productos a vencer");
 			}
 		} catch (Exception e) {
 			
