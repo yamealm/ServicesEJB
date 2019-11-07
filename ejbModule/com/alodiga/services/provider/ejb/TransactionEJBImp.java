@@ -669,10 +669,11 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 									transaction.setObservation("Fecha de expiracion vencida");
 									productSerie2.setEndingDate(new Timestamp(new Date().getTime()));
 									productSerie2.setObservation("Fecha de expiracion vencida");
+									productSerie2.setEndingTransactionId(transaction);
 									List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
 									// sacar del stock
 									seriesSave.add(productSerie2);
-									saveEgressStock(transaction, seriesSave);
+									saveEgress(transaction, seriesSave);
 	
 									// ingresar a cuarentena
 									transaction.setCategory(category);
@@ -928,4 +929,26 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 	     return productSerie;
 	}
 	
+	@Override
+	 public Transaction saveEgress(Transaction transaction , List<ProductSerie> productSeries) throws GeneralException, NullParameterException, NegativeBalanceException,RegisterNotFoundException{
+			
+		if (transaction == null) {
+			throw new NullParameterException(logger,sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "param"), null);
+		}
+		try {
+			EJBRequest request = new EJBRequest();
+			request.setParam(transaction);
+			transaction = saveTransaction(request);
+			for (ProductSerie productSerie : productSeries) {
+				productSerie.setEndingTransactionId(transaction);
+				request = new EJBRequest();
+				request.setParam(productSerie);
+				saveProductSerie(request);
+			}
+		} catch (Exception e) {
+			throw new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(),	getMethodName(), "GeneralException"), null);
+		}
+		return transaction;
+	 
+	 }
 }

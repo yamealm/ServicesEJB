@@ -30,15 +30,18 @@ import com.alodiga.services.provider.commons.models.Braund;
 import com.alodiga.services.provider.commons.models.ControlType;
 import com.alodiga.services.provider.commons.models.EnterCalibration;
 import com.alodiga.services.provider.commons.models.Model;
+import com.alodiga.services.provider.commons.models.ProductSerie;
 import com.alodiga.services.provider.commons.models.Country;
 import com.alodiga.services.provider.commons.models.CountryHasProvider;
 import com.alodiga.services.provider.commons.models.CountryTranslation;
 import com.alodiga.services.provider.commons.models.Currency;
 import com.alodiga.services.provider.commons.models.Enterprise;
+import com.alodiga.services.provider.commons.models.EnterpriseHasEmail;
 import com.alodiga.services.provider.commons.models.Language;
 import com.alodiga.services.provider.commons.models.Provider;
 import com.alodiga.services.provider.commons.models.QuarantineStatus;
 import com.alodiga.services.provider.commons.models.TinType;
+import com.alodiga.services.provider.commons.models.Transaction;
 import com.alodiga.services.provider.commons.utils.EjbConstants;
 import com.alodiga.services.provider.commons.utils.Mail;
 import com.alodiga.services.provider.commons.utils.QueryConstants;
@@ -532,4 +535,41 @@ public class UtilsEJBImp extends AbstractSPEJB implements UtilsEJB, UtilsEJBLoca
 		  return quarantineStatus;
 	}
 
+	@Override
+	public void deleteEmail(EnterpriseHasEmail email) throws GeneralException {
+			EntityTransaction trans = entityManager.getTransaction();
+			try {
+				trans.begin();
+				EnterpriseHasEmail email2 = entityManager.merge(email);
+				entityManager.remove(email2);
+				trans.commit();
+           } catch (Exception e) {
+               e.printStackTrace();
+               try {
+                   if (trans.isActive()) {
+                 	  trans.rollback();
+                   }
+               } catch (IllegalStateException e1) {
+             	  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+               } catch (SecurityException e1) {
+             	  throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+               }
+               throw  new GeneralException(logger, sysError.format(EjbConstants.ERR_GENERAL_EXCEPTION, this.getClass(), getMethodName(), "GeneralException"), null);
+           }
+	}
+
+	@Override
+	public EnterpriseHasEmail saveEnterpriseHasEmail(EnterpriseHasEmail email) throws NullParameterException, GeneralException {
+		if (email == null) {
+			throw new NullParameterException(sysError.format(EjbConstants.ERR_NULL_PARAMETER, this.getClass(), getMethodName(), "model"), null);
+		}
+		return (EnterpriseHasEmail) saveEntity(email);
+	}
+
+	@Override
+	public List<EnterpriseHasEmail> getEnterpriseHasEmails() throws EmptyListException, GeneralException, NullParameterException {
+		EJBRequest request = new EJBRequest();
+		List<EnterpriseHasEmail> emails = (List<EnterpriseHasEmail>) listEntities(EnterpriseHasEmail.class, request, logger, getMethodName());
+		return emails;
+	}
  }
