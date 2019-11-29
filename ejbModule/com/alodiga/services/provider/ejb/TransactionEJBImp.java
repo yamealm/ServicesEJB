@@ -676,6 +676,7 @@ public class TransactionEJBImp extends AbstractSPEJB implements TransactionEJB, 
 									productSerie2.setEndingDate(new Timestamp(new Date().getTime()));
 									productSerie2.setObservation("Fecha de expiracion vencida");
 									productSerie2.setEndingTransactionId(transaction);
+									productSerie2.setOrderWord("Cuarentena");
 									List<ProductSerie> seriesSave = new ArrayList<ProductSerie>();
 									// sacar del stock
 									seriesSave.add(productSerie2);
