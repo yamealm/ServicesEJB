@@ -117,14 +117,14 @@ public class AutomaticProcessControlTimerEJBImp extends AbstractSPEJB implements
 	    private void setTimeoutInterval() throws Exception {
 
 	        initialExpiration = Calendar.getInstance();
-	        initialExpiration.set(Calendar.HOUR, 9);
+	        initialExpiration.set(Calendar.HOUR, 1);
 	        initialExpiration.set(Calendar.MINUTE, 40);
 	        initialExpiration.set(Calendar.SECOND, 0);
 	        initialExpiration.set(Calendar.MILLISECOND, 0);
-	        initialExpiration.set(Calendar.AM_PM, Calendar.AM);
+	        initialExpiration.set(Calendar.AM_PM, Calendar.PM);
 	        Long secondsInDay = 86400L;
-	        secondsInDay = secondsInDay * 15;//Cada quince dias
-	        initialExpiration.add(Calendar.DAY_OF_MONTH, 1);//El timer comienza un día despues que se inicializa.
+	        secondsInDay = secondsInDay * 1;//Cada un dia
+//	        initialExpiration.add(Calendar.DAY_OF_MONTH, 1);//El timer comienza un día despues que se inicializa.
 	        timeoutInterval = secondsInDay * 1000L;//Milisegundos
 	    }
 
